@@ -13,6 +13,8 @@ public final class RenderDistanceController {
     public int current() { return client.options.renderDistance().get(); }
     public void apply(int value) {
         // Use the option validator range, including the low-memory client limit.
+        value = DynamicChunkieConfig.clamp(value, 2, supportedMaximum());
+        if (value == current()) return;
         client.options.renderDistance().set(DynamicChunkieConfig.clamp(value, 2, supportedMaximum()));
         client.options.broadcastOptions();
     }

@@ -10,11 +10,11 @@ public final class DynamicChunkieConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
     public boolean enabled = true, enableAltitudeFactor = true, enableSkyDetection = true,
-            enableElytraOptimization = true, debugMode = false;
+            enableElytraOptimization = true, debugMode = false, preserveRenderCache = true;
     public int minRenderDistance = 2, maxRenderDistance = 32, defaultRenderDistance = -1;
     public int tunnelDistance = 2, smallCaveDistance = 4, largeCaveDistance = 10,
             undergroundOpenDistance = 12, surfaceDistance = 16, mountainDistance = 24, highAltitudeDistance = 32;
-    public int analysisIntervalMs = 750, transitionIntervalMs = 1000, deadZoneChunks = 1;
+    public int analysisIntervalMs = 750, transitionIntervalMs = 1000, deadZoneChunks = 1, targetStabilityMs = 1500;
     public double transitionSpeed = 2, smoothingFactor = 0.35;
     // Persist before applying any dynamic value, so a crash cannot lose the user's setting.
     public boolean restorePending = false;
@@ -35,6 +35,7 @@ public final class DynamicChunkieConfig {
         minRenderDistance = clamp(minRenderDistance, 2, 32);
         maxRenderDistance = clamp(maxRenderDistance, minRenderDistance, 32);
         analysisIntervalMs = clamp(analysisIntervalMs, 250, 10000);
+        targetStabilityMs = clamp(targetStabilityMs, 0, 10000);
         transitionIntervalMs = clamp(transitionIntervalMs, 500, 10000);
         deadZoneChunks = clamp(deadZoneChunks, 0, 4);
         transitionSpeed = Double.isFinite(transitionSpeed) ? Math.max(0.25, Math.min(8, transitionSpeed)) : 2;

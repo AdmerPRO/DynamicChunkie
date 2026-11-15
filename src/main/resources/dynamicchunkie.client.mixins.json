@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.dynamicchunkie.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["ViewAreaMixin", "LevelRendererMixin", "LevelExtractorMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

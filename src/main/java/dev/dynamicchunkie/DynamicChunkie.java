@@ -14,6 +14,7 @@ public final class DynamicChunkie implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("DynamicChunkie");
     @Override public void onInitializeClient() {
         var config = DynamicChunkieConfig.load();
+        RenderCache.configure(config);
         var manager = new DynamicDistanceManager(config);
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);

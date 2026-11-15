@@ -21,7 +21,9 @@ public final class DebugOverlay {
                     String.format(Locale.ROOT, "Openness: %.2f  Horizontal: %.2f", s.openness(), s.horizontal()),
                     "Sky Visible: " + s.sky() + "  Altitude: " + (int)s.altitude(),
                     "Elytra: " + s.elytra(),
-                    "Last Analysis: " + manager.analysisAgeMs() + "ms ago"};
+                    "Last Analysis: " + manager.analysisAgeMs() + "ms ago",
+                    "Render cache: " + (RenderCache.enabled() ? "On" : "Off") +
+                    "  Reused transitions: " + RenderCache.preservedChanges()};
             int y = 8;
             for (String line : lines) {
                 context.fill(5, y - 1, 12 + client.font.width(line), y + 10, 0xA0000000);

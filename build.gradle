@@ -2,7 +2,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
 }
-version = '0.2.0+26.3'
+version = '0.1.0'
 group = 'dev.dynamicchunkie'
 base { archivesName = 'dynamicchunkie' }
 repositories { mavenCentral() }
@@ -17,3 +17,14 @@ java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() 
 tasks.withType(JavaCompile).configureEach { options.release = 25 }
 test { useJUnitPlatform() }
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
+
+// Client integration tests run separately and are never included in the distributed mod.
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'dynamicchunkie-test'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}

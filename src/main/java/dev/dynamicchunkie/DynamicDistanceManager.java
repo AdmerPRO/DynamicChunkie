@@ -13,6 +13,7 @@ public final class DynamicDistanceManager {
     private int lastApplied;
     private EnvironmentScore score;
     private int target;
+    private final StableTarget stableTarget = new StableTarget();
 
     public DynamicDistanceManager(DynamicChunkieConfig config) { this.config = config; }
     public void tick(Minecraft client) {
@@ -53,6 +54,7 @@ public final class DynamicDistanceManager {
         if (world != client.level) {
             world = client.level;
             smoothed = Double.NaN;
+            stableTarget.reset();
             lastAnalysis = 0;
             credit = 0;
         }
@@ -63,8 +65,7 @@ public final class DynamicDistanceManager {
             smoothed = Double.isNaN(smoothed) ? score.openness() :
                     smoothed + config.smoothingFactor * (score.openness() - smoothed);
             int candidate = EnvironmentAnalyzer.target(score, smoothed, config);
-            if (Math.abs(candidate - target) > config.deadZoneChunks || target < config.minRenderDistance ||
-                    target > config.maxRenderDistance) target = candidate;
+            target = stableTarget.update(candidate, now, config);
             lastAnalysis = now;
         }
         double seconds = (now - lastTransition) / 1e9;
@@ -74,7 +75,7 @@ public final class DynamicDistanceManager {
         int bounded = config.bound(current);
         if (current != bounded) { controller.apply(bounded); lastApplied = controller.current(); return; }
         if (Math.abs(target - current) <= config.deadZoneChunks) { credit = 0; return; }
-        credit = Math.min(8, credit + Math.min(seconds, 2) * config.transitionSpeed);
+        credit = Math.min(1, credit + Math.min(seconds, 2) * config.transitionSpeed);
         int step = Math.min(Math.abs(target - current), (int)credit);
         if (step > 0) {
             controller.apply(config.bound(current + Integer.signum(target - current) * step));

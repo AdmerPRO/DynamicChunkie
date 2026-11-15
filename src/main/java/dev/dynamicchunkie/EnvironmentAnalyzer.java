@@ -27,6 +27,17 @@ public final class EnvironmentAnalyzer {
                 Math.max(0, (horizontal - .55) / .45) : 0;
         return Math.max(0, Math.min(1, base + bonus));
     }
+    static int target(EnvironmentScore environment, double smoothed, DynamicChunkieConfig c) {
+        double cap = c.surfaceDistance;
+        if (c.enableSkyDetection && !environment.sky()) cap = c.undergroundOpenDistance;
+        else if (c.enableAltitudeFactor && environment.horizontal() > .55) {
+            double mountain = Math.max(0, Math.min(1, (environment.altitude() - 96) / 64));
+            double high = Math.max(0, Math.min(1, (environment.altitude() - 160) / 80));
+            cap += mountain * (c.mountainDistance - c.surfaceDistance)
+                    + high * (c.highAltitudeDistance - c.mountainDistance);
+        }
+        return c.bound((int)Math.round(Math.min(cap, target(smoothed, c))));
+    }
     static double target(double score, DynamicChunkieConfig c) {
         double[] knots = {0, .13, .30, .65, .82, 1};
         int[] values = {c.tunnelDistance, c.smallCaveDistance, c.largeCaveDistance,

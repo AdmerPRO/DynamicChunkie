@@ -13,7 +13,7 @@ public final class DynamicChunkieConfig {
             enableElytraOptimization = true, debugMode = false;
     public int minRenderDistance = 2, maxRenderDistance = 32, defaultRenderDistance = -1;
     public int tunnelDistance = 2, smallCaveDistance = 4, largeCaveDistance = 10,
-            surfaceDistance = 16, mountainDistance = 24, highAltitudeDistance = 32;
+            undergroundOpenDistance = 12, surfaceDistance = 16, mountainDistance = 24, highAltitudeDistance = 32;
     public int analysisIntervalMs = 750, transitionIntervalMs = 1000, deadZoneChunks = 1;
     public double transitionSpeed = 2, smoothingFactor = 0.35;
     // Persist before applying any dynamic value, so a crash cannot lose the user's setting.
@@ -40,7 +40,7 @@ public final class DynamicChunkieConfig {
         transitionSpeed = Double.isFinite(transitionSpeed) ? Math.max(0.25, Math.min(8, transitionSpeed)) : 2;
         smoothingFactor = Double.isFinite(smoothingFactor) ? Math.max(0.05, Math.min(1, smoothingFactor)) : 0.35;
         tunnelDistance = bound(tunnelDistance); smallCaveDistance = bound(smallCaveDistance);
-        largeCaveDistance = bound(largeCaveDistance); surfaceDistance = bound(surfaceDistance);
+        largeCaveDistance = bound(largeCaveDistance); undergroundOpenDistance = bound(undergroundOpenDistance); surfaceDistance = bound(surfaceDistance);
         mountainDistance = bound(mountainDistance); highAltitudeDistance = bound(highAltitudeDistance);
     }
     public int bound(int n) { return clamp(n, minRenderDistance, maxRenderDistance); }

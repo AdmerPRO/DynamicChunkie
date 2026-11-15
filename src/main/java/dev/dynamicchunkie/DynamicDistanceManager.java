@@ -62,7 +62,7 @@ public final class DynamicDistanceManager {
             score = analyzer.analyze(client, config);
             smoothed = Double.isNaN(smoothed) ? score.openness() :
                     smoothed + config.smoothingFactor * (score.openness() - smoothed);
-            int candidate = config.bound((int)Math.round(EnvironmentAnalyzer.target(smoothed, config)));
+            int candidate = EnvironmentAnalyzer.target(score, smoothed, config);
             if (Math.abs(candidate - target) > config.deadZoneChunks || target < config.minRenderDistance ||
                     target > config.maxRenderDistance) target = candidate;
             lastAnalysis = now;

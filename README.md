@@ -2,7 +2,8 @@
 
 A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby geometry.
 MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
-0.166.2+26.3. It uses three focused client mixins to retain vanilla render-section storage.
+0.166.2+26.3. It uses focused client mixins to retain existing render-section storage, with optional
+integration for Sodium 0.9.3-beta.1+mc26.3.
 It has no reflection, replacement renderer, new culling algorithm, or server component. Simulation Distance is never read or modified.
 
 ## Install and build
@@ -27,7 +28,13 @@ Windows: `gradlew.bat build`. Gradle downloads build dependencies on the first r
 
 The mod creates `config/dynamicchunkie.json` at startup. An example is included at
 [config/dynamicchunkie.example.json](config/dynamicchunkie.example.json).
-Edit the file while Minecraft is closed, then restart.
+For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.3.
+Open **Mods → DynamicChunkie → Configure**. The four pages cover general switches, caves
+and limits, open-terrain profiles, and timing/stability. Save validates and applies settings
+immediately and writes the JSON file. Cancel/Escape discards edits; Defaults resets the
+draft until Save. English and Polish labels are included. No Cloth Config is required.
+Crash recovery fields are managed internally and are not exposed in the UI.
+Without Mod Menu, edit the JSON while Minecraft is closed, then restart.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -156,9 +163,26 @@ No chunk packets are suppressed and no server-side load radius is artificially h
 
 Genuine graphics/resource reloads (including F3+A), world switches and changes beyond
 allocated capacity keep the normal rebuild behavior. Disabling the mod restores normal
-storage handling. The cache is disabled automatically with Sodium so its renderer owns
-storage management. Other replacement renderers are untested; set `preserveRenderCache=false`
-if they conflict.
+storage handling.
+
+### Sodium compatibility
+
+**Tested: Sodium 0.9.3-beta.1+mc26.3** (Modrinth version
+`mc26.3-0.9.3-beta.1-fabric`). Sodium is optional and is not bundled or required at runtime.
+
+Earlier builds disabled reuse with Sodium, which allowed its separate RD-triggered
+`SodiumWorldRenderer.reload()` to destroy/recreate its section manager on each step.
+This build handles that renderer separately: it changes the existing manager's distance,
+uses Sodium's own expandable section tree, and marks its graph dirty. The section manager,
+regions, mesh buffers and existing section fade timestamps remain alive. Section-time
+buffer capacity for the vanilla 2–32 range is reserved once at renderer initialization; Sodium still handles any
+necessary later growth. Genuine F3+A/resource reloads continue to rebuild normally.
+
+The Sodium integration is loaded only for the exact tested version. With another Sodium
+version, or with reuse disabled while Sodium is present, automatic RD changes are paused
+and the original setting is restored instead of repeatedly resetting the renderer.
+The debug HUD identifies `Sodium (reuse)` or `Sodium: auto RD paused`.
+Other replacement renderers and Iris/shaders remain untested.
 
 Reserved slots increase memory use up to the configured maximum, though they do not
 force meshes to compile or chunks to load to that distance. A larger maximum can retain
@@ -167,9 +191,9 @@ can still cause frame-time spikes; this change does not promise zero lag.
 
 ## Validation and manual acceptance checks
 
-Eleven unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
+Fourteen unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
 profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
-and target stability under doorway oscillation.
+target stability under doorway oscillation, isolated UI drafts and restoration metadata preservation.
 Compilation validates the selected Minecraft and Fabric APIs.
 The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
 Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
@@ -178,7 +202,13 @@ game fell back from OpenGL to Vulkan; missing narrator libraries and development
 Realms authentication produced unrelated warnings. The automated client-world regression also passed: repeated 2/8/2/4 transitions preserved
 the same nearby section objects and compiled meshes, block changes still rebuilt geometry,
 a genuine reload recreated storage, and Simulation Distance remained unchanged.
-Visual smoothness, long-flight memory usage and the following environmental checks remain manual:
+The Sodium + Mod Menu client test also passed with the exact versions above: repeated
+RD changes retained the section manager, near sections, visibility data and mesh storage;
+every sampled transition frame retained visible terrain. Block updates and genuine reloads
+still worked and Simulation Distance stayed unchanged. The Mod Menu provider was discovered,
+its screen opened, and edited settings were saved/applied successfully.
+Visual smoothness with the user's world/settings, long-flight memory usage and the following
+environmental checks remain manual:
 
 1. Set RD to 18 and Simulation Distance to 7; join a world and enable the debug HUD.
 2. Enter a long 1×2 tunnel. Wait 15–20 seconds; target/current should fall toward 2–4.
@@ -206,6 +236,9 @@ The separate test mod creates a disposable world; it is not included in the rele
 It checks section/mesh identity during repeated distance changes, unchanged Simulation
 Distance, correct mesh refresh after block changes, and the continued ability to perform a genuine renderer reload.
 Unit tests also cover target stability and oscillation at cave entrances.
+Run `./gradlew runClientGameTest -PwithSodium` for the Sodium 0.9.3-beta.1 + Mod Menu 21.0.1
+integration suite; `./gradlew runClient -PwithSodium` starts that development setup.
+The property adds these mods to the development runtime only; neither is bundled.
 
 Additional manual checks: repeatedly leave/re-enter the same tunnel while watching the
 debug HUD's reuse counter; nearby blocks should remain visible during RD transitions.
@@ -223,6 +256,15 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
   predictive loading, Section Culling, Occlusion Culling, or custom rendering.
 - Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
   Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.
-- Other mods controlling the same option can conflict. Cache retention falls back to vanilla
-  with Sodium; Iris/other renderers and expanded-distance mods remain untested.
-- No settings GUI or live file reload. Commands persist immediately; edit other settings offline.
+- Other mods controlling the same option can conflict. Only the exact Sodium version listed
+  above has a tested integration; Iris/other renderers and expanded-distance mods remain untested.
+- No live external-file reload. Use Mod Menu for live validated edits, or edit the file offline.
+
+## Author and license
+
+Author: **AdmerPRO**.
+
+Copyright (C) 2026 AdmerPRO. Licensed under **GNU General Public License version 3 only**
+(`GPL-3.0-only`); see [LICENSE](LICENSE). The complete license is included in the binary
+and sources JARs. Sodium and Mod Menu remain separately distributed projects with their
+own licenses.

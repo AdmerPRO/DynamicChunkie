@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "minRenderDistance": 2,
+  "maxRenderDistance": 32,
+  "defaultRenderDistance": -1,
+  "analysisIntervalMs": 750,
+  "transitionIntervalMs": 1000,
+  "transitionSpeed": 2.0,
+  "smoothingFactor": 0.35,
+  "deadZoneChunks": 1,
+  "tunnelDistance": 2,
+  "smallCaveDistance": 4,
+  "largeCaveDistance": 10,
+  "undergroundOpenDistance": 12,
+  "surfaceDistance": 16,
+  "mountainDistance": 24,
+  "highAltitudeDistance": 32,
+  "enableAltitudeFactor": true,
+  "enableSkyDetection": true,
+  "enableElytraOptimization": true,
+  "debugMode": false,
+  "restorePending": false
+}

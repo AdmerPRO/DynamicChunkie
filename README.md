@@ -265,6 +265,24 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
   above has a tested integration; Iris/other renderers and expanded-distance mods remain untested.
 - No live external-file reload. Use Mod Menu for live validated edits, or edit the file offline.
 
+## GitHub Actions
+
+[Build](.github/workflows/build.yml) runs on pushes, pull requests and manual dispatch.
+It validates the Gradle wrapper and builds/tests with Temurin Java 25 on Linux and Windows.
+Each successful job uploads the mod and sources JARs; unit test reports are uploaded even
+when tests fail. Download them from **Actions → Build → run → Artifacts**. Artifacts are
+retained for 14 days. The workflow does not change the mod version or publish releases.
+
+[Client integration tests](.github/workflows/client-tests.yml) is manually triggered from
+**Actions → Client integration tests → Run workflow**. Its two jobs exercise vanilla and
+the supported Sodium + Mod Menu setup using Xvfb and Mesa software Vulkan on Ubuntu 24.04.
+Client logs, crash reports, screenshots and reports are uploaded for diagnosis.
+Both workflows use dependency caching and require no configured secrets.
+
+Workflow syntax and expressions were checked locally with actionlint. Execution on GitHub's
+Windows runners and software Vulkan environment must be confirmed on the first hosted run;
+local client tests were previously run with the development machine's GPU.
+
 ## Author and license
 
 Author: **AdmerPRO**.

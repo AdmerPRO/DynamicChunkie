@@ -1,17 +1,17 @@
 # DynamicChunkie
 
 A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby geometry.
-MVP for **Minecraft 1.21.1**, Java 21, Fabric Loader 0.16.10 or newer, and Fabric API
-0.116.6+1.21.1. It has no mixins, reflection, replacement renderer, culling implementation,
+MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
+0.166.2+26.3. It has no mixins, reflection, replacement renderer, culling implementation,
 or server component. Simulation Distance is never read or modified.
 
 ## Install and build
 
-Install Fabric for Minecraft 1.21.1. Put Fabric API and
-`build/libs/dynamicchunkie-0.1.0.jar` in the instance's `mods` directory.
+Install Fabric for Minecraft 26.3. Put Fabric API and
+`build/libs/dynamicchunkie-0.2.0+26.3.jar` in the instance's `mods` directory.
 Do not install the sources JAR.
 
-With JDK 21 selected:
+With JDK 25 selected:
 
 ```sh
 ./gradlew build
@@ -98,7 +98,7 @@ Environmental labels are approximate descriptions of the raw sample.
 
 ## Minecraft integration and performance
 
-`GameOptions.getViewDistance().setValue(...)` uses Minecraft's validated option and its
+`Options.renderDistance().set(...)` uses Minecraft's validated option and its
 normal change callback. The mod sends standard client settings after a change so the
 existing chunk-loading path receives the new distance. It never changes Simulation Distance,
 server simulation settings, entity simulation, or tick code. In multiplayer, the server's
@@ -112,16 +112,27 @@ Sky detection uses the loaded column's existing heightmap. Direction vectors are
 vanilla raycasting still creates small temporary objects. Config writes occur at lifecycle,
 command and manual-setting changes, never on each analysis or transition.
 
-API references: [Yarn GameOptions](https://maven.fabricmc.net/docs/yarn-1.21.1+build.3/net/minecraft/client/option/GameOptions.html)
-and [SimpleOption](https://maven.fabricmc.net/docs/yarn-1.21.1+build.3/net/minecraft/client/option/SimpleOption.html).
-The selected Minecraft JAR's option constructor and validator were also inspected during development.
+This port uses Minecraft 26.3's unobfuscated official class names, Fabric Loom 1.17.21,
+and Gradle 9.6.0; Yarn mappings and JAR remapping are no longer needed.
+The selected Minecraft JAR's `Options`, `OptionInstance.IntRange`, raycast APIs,
+and GUI extraction APIs were inspected during the port.
+See [Fabric's 26.3 migration notes](https://www.fabricmc.net/2026/09/15/263.html).
+The debug HUD uses Fabric's `HudElementRegistry` and the game's `GuiGraphicsExtractor`.
+
+The earlier 1.21.1 implementation remains in Git history. The current artifact targets
+26.3 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
 
 ## Validation and manual acceptance checks
 
 Automated tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
 profile interpolation, environment ceilings, nonfinite/invalid settings, and configured bounds.
 Compilation and remapping validate the selected Minecraft and Fabric APIs.
-A graphical Minecraft session has **not** been run; the following checks remain manual:
+The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
+Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
+the mod configuration, and the user confirmed that Minecraft opened. On this machine the
+game fell back from OpenGL to Vulkan; missing narrator libraries and development-account
+Realms authentication produced unrelated warnings. No in-world acceptance test was performed.
+The following checks remain manual:
 
 1. Set RD to 18 and Simulation Distance to 7; join a world and enable the debug HUD.
 2. Enter a long 1×2 tunnel. Wait 15–20 seconds; target/current should fall toward 2–4.

@@ -12,10 +12,15 @@ import org.slf4j.LoggerFactory;
 
 public final class DynamicChunkie implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("DynamicChunkie");
+    private static DynamicDistanceManager manager;
+    public static DynamicChunkieConfig config() { return manager.config; }
+    public static boolean applyConfig(DynamicChunkieConfig value) {
+        return manager.applyConfig(net.minecraft.client.Minecraft.getInstance(), value);
+    }
     @Override public void onInitializeClient() {
         var config = DynamicChunkieConfig.load();
         RenderCache.configure(config);
-        var manager = new DynamicDistanceManager(config);
+        manager = new DynamicDistanceManager(config);
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> manager.restore(client));

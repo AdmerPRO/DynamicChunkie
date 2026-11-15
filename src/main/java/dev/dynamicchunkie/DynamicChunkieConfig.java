@@ -44,6 +44,36 @@ public final class DynamicChunkieConfig {
         largeCaveDistance = bound(largeCaveDistance); undergroundOpenDistance = bound(undergroundOpenDistance); surfaceDistance = bound(surfaceDistance);
         mountainDistance = bound(mountainDistance); highAltitudeDistance = bound(highAltitudeDistance);
     }
+    public DynamicChunkieConfig copy() {
+        var result = new DynamicChunkieConfig();
+        result.copySettingsFrom(this);
+        result.defaultRenderDistance = defaultRenderDistance;
+        result.restorePending = restorePending;
+        return result;
+    }
+    public void copySettingsFrom(DynamicChunkieConfig other) {
+        enabled = other.enabled;
+        enableAltitudeFactor = other.enableAltitudeFactor;
+        enableSkyDetection = other.enableSkyDetection;
+        enableElytraOptimization = other.enableElytraOptimization;
+        debugMode = other.debugMode;
+        preserveRenderCache = other.preserveRenderCache;
+        minRenderDistance = other.minRenderDistance;
+        maxRenderDistance = other.maxRenderDistance;
+        tunnelDistance = other.tunnelDistance;
+        smallCaveDistance = other.smallCaveDistance;
+        largeCaveDistance = other.largeCaveDistance;
+        undergroundOpenDistance = other.undergroundOpenDistance;
+        surfaceDistance = other.surfaceDistance;
+        mountainDistance = other.mountainDistance;
+        highAltitudeDistance = other.highAltitudeDistance;
+        analysisIntervalMs = other.analysisIntervalMs;
+        transitionIntervalMs = other.transitionIntervalMs;
+        deadZoneChunks = other.deadZoneChunks;
+        targetStabilityMs = other.targetStabilityMs;
+        transitionSpeed = other.transitionSpeed;
+        smoothingFactor = other.smoothingFactor;
+    }
     public int bound(int n) { return clamp(n, minRenderDistance, maxRenderDistance); }
     static int clamp(int n, int min, int max) { return Math.max(min, Math.min(max, n)); }
     public boolean save() {

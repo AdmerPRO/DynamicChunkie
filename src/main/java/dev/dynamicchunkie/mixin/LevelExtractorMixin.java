@@ -32,6 +32,11 @@ abstract class LevelExtractorMixin {
             target = "Lnet/minecraft/client/renderer/extract/LevelExtractor;allChanged()V"))
     private void dynamicchunkie$reuseGeometry(LevelExtractor extractor) {
         int radius = minecraft.options.getEffectiveRenderDistance();
+        if (RenderCache.sodiumEnabled()) {
+            // Sodium owns the geometry; its setupTerrain hook updates distance in-place.
+            lastViewDistance = radius;
+            return;
+        }
         if (RenderCache.enabled() && sectionUpdateTracker != null &&
                 (Object)levelRenderer.viewArea() instanceof CachedViewArea cached &&
                 cached.dynamicchunkie$isManaged() && radius <= cached.dynamicchunkie$capacity()) {

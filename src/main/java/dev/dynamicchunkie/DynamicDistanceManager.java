@@ -31,7 +31,7 @@ public final class DynamicDistanceManager {
             config.save();
             initialized = true;
         }
-        if (!config.enabled || client.level == null || client.player == null) { restore(client); return; }
+        if (!config.enabled || !RenderCache.canChangeDistance() || client.level == null || client.player == null) { restore(client); return; }
         // Respect manual video-setting changes. Never fight the options screen.
         if (active && controller.current() != lastApplied) {
             config.defaultRenderDistance = controller.current();
@@ -98,6 +98,25 @@ public final class DynamicDistanceManager {
         config.enabled = !config.enabled;
         if (!config.enabled) restore(client);
         config.save();
+    }
+    public boolean applyConfig(Minecraft client, DynamicChunkieConfig draft) {
+        draft.validate();
+        var old = config.copy();
+        if (!draft.enabled) restore(client);
+        config.copySettingsFrom(draft);
+        int maximum = new RenderDistanceController(client).supportedMaximum();
+        config.minRenderDistance = Math.min(config.minRenderDistance, maximum);
+        config.maxRenderDistance = Math.min(config.maxRenderDistance, maximum);
+        config.validate();
+        if (!config.save()) {
+            config.copySettingsFrom(old);
+            return false;
+        }
+        stableTarget.reset();
+        smoothed = Double.NaN;
+        lastAnalysis = 0;
+        credit = 0;
+        return true;
     }
     public int target() { return target; }
     public EnvironmentScore score() { return score; }

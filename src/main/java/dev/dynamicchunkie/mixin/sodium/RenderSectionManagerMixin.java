@@ -1,0 +1,24 @@
+package dev.dynamicchunkie.mixin.sodium;
+
+import dev.dynamicchunkie.compat.SodiumDistanceAccess;
+import net.caffeinemc.mods.sodium.client.render.chunk.RenderSectionManager;
+import org.spongepowered.asm.mixin.*;
+
+@Pseudo
+@Mixin(value = RenderSectionManager.class, remap = false)
+abstract class RenderSectionManagerMixin implements SodiumDistanceAccess {
+    @Shadow @Final @Mutable private int renderDistance;
+    @Shadow @Final private net.caffeinemc.mods.sodium.client.render.chunk.storage.SectionStorage renderSections;
+    @Shadow public abstract void markGraphDirty();
+    @Shadow public abstract void beforeSectionUpdates();
+
+    @Override public Object dynamicchunkie$sectionAt(int x, int y, int z) {
+        return renderSections.getConsistent(net.minecraft.core.SectionPos.asLong(x, y, z));
+    }
+    @Override public void dynamicchunkie$setDistance(int radius) {
+        renderDistance = radius;
+        // Sodium already supports growing its section tree without discarding regions.
+        beforeSectionUpdates();
+        markGraphDirty();
+    }
+}

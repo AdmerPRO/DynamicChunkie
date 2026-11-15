@@ -22,7 +22,7 @@ public final class DebugOverlay {
                     "Sky Visible: " + s.sky() + "  Altitude: " + (int)s.altitude(),
                     "Elytra: " + s.elytra(),
                     "Last Analysis: " + manager.analysisAgeMs() + "ms ago",
-                    "Render cache: " + (RenderCache.enabled() ? "On" : "Off") +
+                    "Render cache: " + RenderCache.status() +
                     "  Reused transitions: " + RenderCache.preservedChanges()};
             int y = 8;
             for (String line : lines) {

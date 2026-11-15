@@ -19,5 +19,7 @@
   "enableSkyDetection": true,
   "enableElytraOptimization": true,
   "debugMode": false,
-  "restorePending": false
+  "restorePending": false,
+  "preserveRenderCache": true,
+  "targetStabilityMs": 1500
 }

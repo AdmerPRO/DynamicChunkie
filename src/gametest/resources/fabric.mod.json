@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "dynamicchunkie-test",
+  "version": "0.1.0",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["dev.dynamicchunkie.RenderCacheGameTest"]
+  }
+}

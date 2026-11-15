@@ -2,14 +2,14 @@
 
 A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby geometry.
 MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
-0.166.2+26.3. It has no mixins, reflection, replacement renderer, culling implementation,
-or server component. Simulation Distance is never read or modified.
+0.166.2+26.3. It uses three focused client mixins to retain vanilla render-section storage.
+It has no reflection, replacement renderer, new culling algorithm, or server component. Simulation Distance is never read or modified.
 
 ## Install and build
 
 Install Fabric for Minecraft 26.3. Put Fabric API and
-`build/libs/dynamicchunkie-0.2.0+26.3.jar` in the instance's `mods` directory.
-Do not install the sources JAR.
+`build/libs/dynamicchunkie-0.1.0.jar` in the instance's `mods` directory.
+Do not install the sources JAR. The mod version stays at **0.1.0** until explicitly changed by the user.
 
 With JDK 25 selected:
 
@@ -36,7 +36,9 @@ Edit the file while Minecraft is closed, then restart.
 | defaultRenderDistance | -1 | Original setting; -1 captures it on first start |
 | analysisIntervalMs | 750 | Sample interval, validated to 250–10000 ms |
 | transitionIntervalMs | 1000 | Minimum time between RD changes, 500–10000 ms |
-| transitionSpeed | 2.0 | Chunks per second, 0.25–8 |
+| transitionSpeed | 2.0 | Requested chunks per second, 0.25–8; capped at one chunk per transition interval |
+| targetStabilityMs | 1500 | A materially different target must persist this long, 0–10000 ms |
+| preserveRenderCache | true | Retain vanilla render-section storage between RD changes |
 | smoothingFactor | 0.35 | Exponential score smoothing, 0.05–1 |
 | deadZoneChunks | 1 | Ignore target/current differences this small, 0–4 |
 | tunnelDistance / smallCaveDistance | 2 / 4 | Enclosed-space profile values |
@@ -92,14 +94,15 @@ value from Y=160–240. Altitude alone cannot increase the score in a tight room
 Disabling sky detection also disables the sky-based cave ceiling.
 
 An exponential moving average, target hysteresis, integer dead zone, bounded transition
-steps, and a minimum change interval prevent rapid oscillation. The HUD reports the raw
+steps, a target stability window, and a minimum change interval prevent rapid oscillation.
+Each normal transition changes at most one chunk, even after a stall or with high transitionSpeed. The HUD reports the raw
 score and accepted target; the latter includes smoothing, profile ceilings and hysteresis.
 Environmental labels are approximate descriptions of the raw sample.
 
 ## Minecraft integration and performance
 
 `Options.renderDistance().set(...)` uses Minecraft's validated option and its
-normal change callback. The mod sends standard client settings after a change so the
+normal change callback. Reapplying the current value is a no-op. The mod sends standard client settings after a change so the
 existing chunk-loading path receives the new distance. It never changes Simulation Distance,
 server simulation settings, entity simulation, or tick code. In multiplayer, the server's
 view-distance limit still applies.
@@ -122,17 +125,60 @@ The debug HUD uses Fabric's `HudElementRegistry` and the game's `GuiGraphicsExtr
 The earlier 1.21.1 implementation remains in Git history. The current artifact targets
 26.3 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
 
+## Retaining nearby chunks without full rebuilds
+
+In vanilla 26.3, the RD comparison in `LevelExtractor.extract` calls `allChanged`.
+That recreates update tracking and tells `LevelRenderer` to invalidate compiled geometry,
+release all section buffers, and recreate the view area. Merely stepping the slider slowly
+therefore still causes repeated full rebuilds.
+
+With `preserveRenderCache=true`, the mod reserves vanilla render-section slots and update
+tracking up to the configured maximum when a world/renderer initializes. It keeps the same
+`ViewArea`, render sections and mesh buffers during distance changes within that capacity.
+The engine's normal visibility traversal receives the current distance, not the reserved
+capacity. Its normal asynchronous graph update retains the previous graph until the new
+one is ready. This is reuse of Minecraft's rendering machinery, not a custom renderer or
+a new Section/Occlusion Culling implementation.
+
+Three mixins are necessary because Fabric has no supported event for avoiding this reset:
+
+- `LevelRendererMixin` reserves bounded section storage at normal renderer initialization.
+- `ViewAreaMixin` separates allocated capacity from the active vanilla traversal radius.
+- `LevelExtractorMixin` replaces only the RD-triggered full reset with a standard graph
+  invalidation, and reserves matching block-update tracking.
+
+For example, with 2 chunks already rendered, raising RD to 8 preserves the near section
+objects and their geometry. Newly needed data/geometry outside that area still loads and
+compiles through Minecraft. Reducing RD retains mesh storage for potential reuse, subject
+to ordinary block updates, chunk unloads and the rotating storage's eviction as you move.
+This is a bounded in-memory geometry cache, not a disk/world snapshot cache.
+No chunk packets are suppressed and no server-side load radius is artificially held high.
+
+Genuine graphics/resource reloads (including F3+A), world switches and changes beyond
+allocated capacity keep the normal rebuild behavior. Disabling the mod restores normal
+storage handling. The cache is disabled automatically with Sodium so its renderer owns
+storage management. Other replacement renderers are untested; set `preserveRenderCache=false`
+if they conflict.
+
+Reserved slots increase memory use up to the configured maximum, though they do not
+force meshes to compile or chunks to load to that distance. A larger maximum can retain
+more geometry and consume more RAM/VRAM. New terrain generation, downloads and compilation
+can still cause frame-time spikes; this change does not promise zero lag.
+
 ## Validation and manual acceptance checks
 
-Automated tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
-profile interpolation, environment ceilings, nonfinite/invalid settings, and configured bounds.
-Compilation and remapping validate the selected Minecraft and Fabric APIs.
+Eleven unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
+profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
+and target stability under doorway oscillation.
+Compilation validates the selected Minecraft and Fabric APIs.
 The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
 Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
 the mod configuration, and the user confirmed that Minecraft opened. On this machine the
 game fell back from OpenGL to Vulkan; missing narrator libraries and development-account
-Realms authentication produced unrelated warnings. No in-world acceptance test was performed.
-The following checks remain manual:
+Realms authentication produced unrelated warnings. The automated client-world regression also passed: repeated 2/8/2/4 transitions preserved
+the same nearby section objects and compiled meshes, block changes still rebuilt geometry,
+a genuine reload recreated storage, and Simulation Distance remained unchanged.
+Visual smoothness, long-flight memory usage and the following environmental checks remain manual:
 
 1. Set RD to 18 and Simulation Distance to 7; join a world and enable the debug HUD.
 2. Enter a long 1×2 tunnel. Wait 15–20 seconds; target/current should fall toward 2–4.
@@ -142,7 +188,8 @@ The following checks remain manual:
    mountain around Y=160, then above Y=240, to approach 20–24 and 24–32.
 5. Enter a sealed small room at Y=240. Target must decrease despite altitude.
 6. Walk repeatedly through a cave entrance. Confirm score smoothing, the one-chunk dead
-   zone, and no more than one RD change per transition interval. Default steps are about two chunks.
+   zone, target stability window, and no more than one RD change per transition interval.
+   Normal steps are at most one chunk.
 7. Fly Elytra over open terrain, then through a safe enclosed passage. Check increased
    sample frequency, open-flight growth and enclosed-flight reduction.
 8. Restart with min=6/max=12. Check all dynamic values remain within 6–12 after the initial
@@ -154,6 +201,18 @@ The following checks remain manual:
 11. Test near unloaded chunk boundaries and during teleportation. Missing data must not
     cause large open-space targets or explicit chunk loads.
 
+For the cache regression, run `./gradlew runClientGameTest` with a graphical session.
+The separate test mod creates a disposable world; it is not included in the release JAR.
+It checks section/mesh identity during repeated distance changes, unchanged Simulation
+Distance, correct mesh refresh after block changes, and the continued ability to perform a genuine renderer reload.
+Unit tests also cover target stability and oscillation at cave entrances.
+
+Additional manual checks: repeatedly leave/re-enter the same tunnel while watching the
+debug HUD's reuse counter; nearby blocks should remain visible during RD transitions.
+Break/place blocks, alter lighting, cross chunk boundaries, teleport and switch dimensions
+to check that retained geometry still updates. Profile frame times and memory over a long
+Elytra flight and compare cache on/off. Repeat on a remote server.
+
 ## Known limitations
 
 - 32-block local samples cannot infer distant horizons, all room shapes, or nearby cave exits.
@@ -162,8 +221,8 @@ The following checks remain manual:
   especially directly after joining or teleporting.
 - Profile values are heuristics, not measured visibility guarantees. There is no FPS feedback,
   predictive loading, Section Culling, Occlusion Culling, or custom rendering.
-- Existing renderer rebuilds and chunk arrival can still cause stutter when distance changes.
-  Transition controls reduce frequency but cannot eliminate vanilla loading costs.
-- Other mods controlling the same option can conflict. Compatibility with Sodium/Iris and
-  expanded-distance mods has not been tested; this MVP uses the vanilla validator.
+- Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
+  Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.
+- Other mods controlling the same option can conflict. Cache retention falls back to vanilla
+  with Sodium; Iris/other renderers and expanded-distance mods remain untested.
 - No settings GUI or live file reload. Commands persist immediately; edit other settings offline.

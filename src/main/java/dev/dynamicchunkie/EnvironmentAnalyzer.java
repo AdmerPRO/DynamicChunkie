@@ -1,17 +1,17 @@
 package dev.dynamicchunkie;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class EnvironmentAnalyzer {
     private final RaycastAnalyzer rays = new RaycastAnalyzer();
-    public EnvironmentScore analyze(MinecraftClient client, DynamicChunkieConfig c) {
+    public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig c) {
         var p = client.player;
-        var r = rays.sample(client.world, p);
-        boolean sky = c.enableSkyDetection && client.world.isSkyVisible(p.getBlockPos());
+        var r = rays.sample(client.level, p);
+        boolean sky = c.enableSkyDetection && client.level.canSeeSky(p.blockPosition());
         double altitude = p.getY();
         double open = openness(r.average(), r.horizontal(), r.vertical(), r.clear(), sky, altitude, c.enableAltitudeFactor);
         boolean flight = p.isFallFlying();
-        double speed = p.getVelocity().length() * 20;
+        double speed = p.getDeltaMovement().length() * 20;
         if (c.enableElytraOptimization && flight)
             open = Math.min(1, open + 0.10 * Math.min(1, speed / 30) * r.horizontal() * r.forward());
         String name = open < .13 ? "Narrow Tunnel" : open < .30 ? "Small Cave" :

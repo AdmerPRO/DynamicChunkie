@@ -1,6 +1,6 @@
 package dev.dynamicchunkie;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class DynamicDistanceManager {
     final DynamicChunkieConfig config;
@@ -15,7 +15,7 @@ public final class DynamicDistanceManager {
     private int target;
 
     public DynamicDistanceManager(DynamicChunkieConfig config) { this.config = config; }
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!initialized) {
             controller = new RenderDistanceController(client);
             config.minRenderDistance = Math.min(config.minRenderDistance, controller.supportedMaximum());
@@ -23,21 +23,21 @@ public final class DynamicDistanceManager {
             config.validate();
             if (config.restorePending && config.defaultRenderDistance >= 2) {
                 controller.apply(config.defaultRenderDistance);
-                client.options.write();
+                client.options.save();
                 config.restorePending = false;
             }
             if (config.defaultRenderDistance < 2) config.defaultRenderDistance = controller.current();
             config.save();
             initialized = true;
         }
-        if (!config.enabled || client.world == null || client.player == null) { restore(client); return; }
+        if (!config.enabled || client.level == null || client.player == null) { restore(client); return; }
         // Respect manual video-setting changes. Never fight the options screen.
         if (active && controller.current() != lastApplied) {
             config.defaultRenderDistance = controller.current();
             config.save();
             lastApplied = controller.current();
         }
-        if (client.currentScreen != null || client.isPaused()) {
+        if (client.gui.screen() != null || client.isPaused()) {
             lastTransition = System.nanoTime();
             return;
         }
@@ -50,8 +50,8 @@ public final class DynamicDistanceManager {
             lastApplied = controller.current();
             lastTransition = now;
         }
-        if (world != client.world) {
-            world = client.world;
+        if (world != client.level) {
+            world = client.level;
             smoothed = Double.NaN;
             lastAnalysis = 0;
             credit = 0;
@@ -82,10 +82,10 @@ public final class DynamicDistanceManager {
             credit -= step;
         }
     }
-    public void restore(MinecraftClient client) {
+    public void restore(Minecraft client) {
         if (!active) return;
         controller.apply(config.defaultRenderDistance);
-        client.options.write();
+        client.options.save();
         config.restorePending = false;
         config.save();
         active = false;
@@ -93,7 +93,7 @@ public final class DynamicDistanceManager {
         score = null;
         target = 0;
     }
-    public void toggle(MinecraftClient client) {
+    public void toggle(Minecraft client) {
         config.enabled = !config.enabled;
         if (!config.enabled) restore(client);
         config.save();

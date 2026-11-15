@@ -5,8 +5,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
-import net.minecraft.text.Text;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,13 +23,13 @@ public final class DynamicChunkie implements ClientModInitializer {
             dispatcher.register(literal("dynamicchunkie")
                 .then(literal("toggle").executes(ctx -> {
                     manager.toggle(ctx.getSource().getClient());
-                    ctx.getSource().sendFeedback(Text.literal("DynamicChunkie enabled: " + config.enabled));
+                    ctx.getSource().sendFeedback(Component.literal("DynamicChunkie enabled: " + config.enabled));
                     return 1;
                 }))
                 .then(literal("debug").executes(ctx -> {
                     config.debugMode = !config.debugMode;
                     config.save();
-                    ctx.getSource().sendFeedback(Text.literal("DynamicChunkie debug: " + config.debugMode));
+                    ctx.getSource().sendFeedback(Component.literal("DynamicChunkie debug: " + config.debugMode));
                     return 1;
                 }))));
     }

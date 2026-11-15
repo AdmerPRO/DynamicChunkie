@@ -1,18 +1,21 @@
 package dev.dynamicchunkie;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.minecraft.resources.Identifier;
+import net.minecraft.client.Minecraft;
 import java.util.Locale;
 
 public final class DebugOverlay {
     public static void register(DynamicDistanceManager manager) {
-        HudRenderCallback.EVENT.register((context, tickCounter) -> {
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (!manager.config.debugMode || client.options.hudHidden || client.player == null) return;
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+                Identifier.fromNamespaceAndPath("dynamicchunkie", "debug"), (context, tickCounter) -> {
+            Minecraft client = Minecraft.getInstance();
+            if (!manager.config.debugMode || client.gui.hud.isHidden() || client.player == null) return;
             EnvironmentScore s = manager.score();
             String[] lines = s == null ? new String[]{"DynamicChunkie: " + (manager.config.enabled ? "Waiting" : "Disabled")} :
                     new String[]{"DynamicChunkie",
-                    "Current RD: " + client.options.getViewDistance().getValue(),
+                    "Current RD: " + client.options.renderDistance().get(),
                     "Target RD: " + manager.target(),
                     "Environment: " + s.environment(),
                     String.format(Locale.ROOT, "Openness: %.2f  Horizontal: %.2f", s.openness(), s.horizontal()),
@@ -21,8 +24,8 @@ public final class DebugOverlay {
                     "Last Analysis: " + manager.analysisAgeMs() + "ms ago"};
             int y = 8;
             for (String line : lines) {
-                context.fill(5, y - 1, 12 + client.textRenderer.getWidth(line), y + 10, 0xA0000000);
-                context.drawTextWithShadow(client.textRenderer, line, 8, y, 0xFFFFFF);
+                context.fill(5, y - 1, 12 + client.font.width(line), y + 10, 0xA0000000);
+                context.text(client.font, line, 8, y, 0xFFFFFFFF, true);
                 y += 12;
             }
         });

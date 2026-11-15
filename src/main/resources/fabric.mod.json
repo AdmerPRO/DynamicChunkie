@@ -6,6 +6,6 @@
   "description": "Environment-aware client render distance.",
   "environment": "client",
   "entrypoints": { "client": ["dev.dynamicchunkie.DynamicChunkie"] },
-  "depends": { "fabricloader": ">=0.16.10", "minecraft": "~1.21.1", "java": ">=21", "fabric-api": "*" },
+  "depends": { "fabricloader": ">=0.20.1", "minecraft": "~26.3", "java": ">=25", "fabric-api": "*" },
   "license": "MIT"
 }

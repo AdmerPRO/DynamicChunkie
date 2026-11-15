@@ -1,19 +1,19 @@
 package dev.dynamicchunkie;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class RenderDistanceController {
-    private final MinecraftClient client;
-    public RenderDistanceController(MinecraftClient client) { this.client = client; }
+    private final Minecraft client;
+    public RenderDistanceController(Minecraft client) { this.client = client; }
     public int supportedMaximum() {
-        Object callbacks = client.options.getViewDistance().getCallbacks();
-        return callbacks instanceof net.minecraft.client.option.SimpleOption.ValidatingIntSliderCallbacks range
+        Object callbacks = client.options.renderDistance().values();
+        return callbacks instanceof net.minecraft.client.OptionInstance.IntRange range
                 ? range.maxInclusive() : 32;
     }
-    public int current() { return client.options.getViewDistance().getValue(); }
+    public int current() { return client.options.renderDistance().get(); }
     public void apply(int value) {
         // Use the option validator range, including the low-memory client limit.
-        client.options.getViewDistance().setValue(DynamicChunkieConfig.clamp(value, 2, supportedMaximum()));
-        client.options.sendClientSettings();
+        client.options.renderDistance().set(DynamicChunkieConfig.clamp(value, 2, supportedMaximum()));
+        client.options.broadcastOptions();
     }
 }

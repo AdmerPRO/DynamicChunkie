@@ -27,7 +27,6 @@
   "dynamicchunkie.config.highAltitudeDistance": "High altitude",
   "dynamicchunkie.config.analysisIntervalMs": "Analysis interval (ms)",
   "dynamicchunkie.config.transitionIntervalMs": "Transition interval (ms)",
-  "dynamicchunkie.config.transitionSpeed": "Chunks / second",
   "dynamicchunkie.config.smoothingFactor": "Score smoothing",
   "dynamicchunkie.config.deadZoneChunks": "Dead zone (chunks)",
   "dynamicchunkie.config.targetStabilityMs": "Target stability (ms)"

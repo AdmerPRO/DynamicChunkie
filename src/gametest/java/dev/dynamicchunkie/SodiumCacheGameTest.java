@@ -63,11 +63,51 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
             context.waitFor(client -> originalSection.getVisibilityData() != visibility, 400);
             context.runOnClient(client -> client.levelExtractor.allChanged());
             context.waitFor(client -> manager() != originalManager, 200);
+            testAbruptTargets(context);
             context.runOnClient(client -> {
                 client.gui.setScreen(null);
                 DynamicChunkie.LOG.info("Sodium beta.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
+    }
+    private void testAbruptTargets(ClientGameTestContext context) {
+        var backup = context.computeOnClient(client -> DynamicChunkie.config().copy());
+        try {
+            context.runOnClient(client -> {
+                new RenderDistanceController(client).apply(16);
+                setUniformTarget(2);
+                client.gui.setScreen(null);
+            });
+            context.waitFor(client -> {
+                int distance = client.options.renderDistance().get();
+                if (distance == 16) return false;
+                require(distance == 2, "Decrease used intermediate distance: " + distance);
+                return true;
+            }, 400);
+            context.runOnClient(client -> setUniformTarget(16));
+            context.waitFor(client -> {
+                int distance = client.options.renderDistance().get();
+                if (distance == 2) return false;
+                require(distance == 16, "Increase used intermediate distance: " + distance);
+                return true;
+            }, 400);
+            DynamicChunkie.LOG.info("Abrupt transition regression passed: 16 -> 2 -> 16 without intermediate distances");
+        } finally {
+            context.runOnClient(client -> DynamicChunkie.applyConfig(backup));
+        }
+    }
+    private void setUniformTarget(int value) {
+        var settings = DynamicChunkie.config().copy();
+        settings.minRenderDistance = 2;
+        settings.maxRenderDistance = 32;
+        settings.tunnelDistance = settings.smallCaveDistance = settings.largeCaveDistance =
+                settings.undergroundOpenDistance = settings.surfaceDistance =
+                settings.mountainDistance = settings.highAltitudeDistance = value;
+        settings.smoothingFactor = 1;
+        settings.targetStabilityMs = 0;
+        settings.deadZoneChunks = 0;
+        settings.transitionIntervalMs = 500;
+        require(DynamicChunkie.applyConfig(settings), "Cannot apply test profile");
     }
     private void testMenu(ClientGameTestContext context) {
         var original = context.computeOnClient(client -> DynamicChunkie.config().copy());

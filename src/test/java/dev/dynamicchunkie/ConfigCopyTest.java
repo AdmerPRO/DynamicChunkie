@@ -28,11 +28,11 @@ class ConfigCopyTest {
         original.targetStabilityMs = 4000;
         original.preserveRenderCache = false;
         original.highAltitudeDistance = 20;
-        original.transitionSpeed = .5;
+        original.smoothingFactor = .5;
         var copy = original.copy();
         assertEquals(4000, copy.targetStabilityMs);
         assertFalse(copy.preserveRenderCache);
         assertEquals(20, copy.highAltitudeDistance);
-        assertEquals(.5, copy.transitionSpeed);
+        assertEquals(.5, copy.smoothingFactor);
     }
 }

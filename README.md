@@ -43,7 +43,6 @@ Without Mod Menu, edit the JSON while Minecraft is closed, then restart.
 | defaultRenderDistance | -1 | Original setting; -1 captures it on first start |
 | analysisIntervalMs | 750 | Sample interval, validated to 250–10000 ms |
 | transitionIntervalMs | 1000 | Minimum time between RD changes, 500–10000 ms |
-| transitionSpeed | 2.0 | Requested chunks per second, 0.25–8; capped at one chunk per transition interval |
 | targetStabilityMs | 1500 | A materially different target must persist this long, 0–10000 ms |
 | preserveRenderCache | true | Retain vanilla render-section storage between RD changes |
 | smoothingFactor | 0.35 | Exponential score smoothing, 0.05–1 |
@@ -51,7 +50,7 @@ Without Mod Menu, edit the JSON while Minecraft is closed, then restart.
 | tunnelDistance / smallCaveDistance | 2 / 4 | Enclosed-space profile values |
 | largeCaveDistance / undergroundOpenDistance | 10 / 12 | Cave profile and covered-area ceiling |
 | surfaceDistance | 16 | Open low-altitude ceiling |
-| mountainDistance / highAltitudeDistance | 24 / 32 | Open high-altitude ceilings |
+| mountainDistance / highAltitudeDistance | 16 / 16 | Open high-altitude ceilings |
 | enableAltitudeFactor | true | Gate altitude bonuses on horizontal openness |
 | enableSkyDetection | true | Use loaded-column sky visibility and cave ceiling |
 | enableElytraOptimization | true | Faster flight samples and movement-aware score boost |
@@ -100,11 +99,17 @@ the surface cap rises toward the mountain value from Y=96–160, then toward the
 value from Y=160–240. Altitude alone cannot increase the score in a tight room.
 Disabling sky detection also disables the sky-based cave ceiling.
 
-An exponential moving average, target hysteresis, integer dead zone, bounded transition
-steps, a target stability window, and a minimum change interval prevent rapid oscillation.
-Each normal transition changes at most one chunk, even after a stall or with high transitionSpeed. The HUD reports the raw
-score and accepted target; the latter includes smoothing, profile ceilings and hysteresis.
-Environmental labels are approximate descriptions of the raw sample.
+An exponential moving average, target hysteresis, integer dead zone, a target stability
+window, and a minimum change interval prevent rapid oscillation. Once accepted, the target
+is applied in **one abrupt change** (for example 16 → 2 or 2 → 16), without intermediate
+one-chunk steps. `transitionIntervalMs` still limits change frequency. The old
+`transitionSpeed` key is ignored and removed when the configuration is saved.
+The HUD reports the raw score and accepted target; the latter includes smoothing,
+profile ceilings and hysteresis. Environmental labels describe the raw sample.
+
+Default surface, mountain and high-altitude profile values are all 16 chunks.
+Existing saved profile values remain unchanged; use **Defaults → Save** in Mod Menu
+or set `mountainDistance` and `highAltitudeDistance` to 16 to adopt these defaults.
 
 ## Minecraft integration and performance
 
@@ -215,11 +220,11 @@ environmental checks remain manual:
 3. At similar Y, enter a broad cave with 16–32 blocks of clearance. Target should rise
    toward 8–12. This distinguishes spaces at the same altitude.
 4. Move onto open sea-level terrain. Target should approach 12–16; move onto an open
-   mountain around Y=160, then above Y=240, to approach 20–24 and 24–32.
+   mountain around Y=160, then above Y=240; the default open-terrain target remains 16.
 5. Enter a sealed small room at Y=240. Target must decrease despite altitude.
 6. Walk repeatedly through a cave entrance. Confirm score smoothing, the one-chunk dead
    zone, target stability window, and no more than one RD change per transition interval.
-   Normal steps are at most one chunk.
+   Each accepted target must be reached in one RD change, without intermediate values.
 7. Fly Elytra over open terrain, then through a safe enclosed passage. Check increased
    sample frequency, open-flight growth and enclosed-flight reduction.
 8. Restart with min=6/max=12. Check all dynamic values remain within 6–12 after the initial

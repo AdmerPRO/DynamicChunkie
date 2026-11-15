@@ -9,7 +9,7 @@ public final class DynamicDistanceManager {
     private boolean active, initialized;
     private Object world;
     private long lastAnalysis, lastTransition;
-    private double smoothed = Double.NaN, credit;
+    private double smoothed = Double.NaN;
     private int lastApplied;
     private EnvironmentScore score;
     private int target;
@@ -56,7 +56,6 @@ public final class DynamicDistanceManager {
             smoothed = Double.NaN;
             stableTarget.reset();
             lastAnalysis = 0;
-            credit = 0;
         }
         long interval = config.analysisIntervalMs;
         if (config.enableElytraOptimization && client.player.isFallFlying()) interval = Math.max(250, interval / 2);
@@ -74,14 +73,10 @@ public final class DynamicDistanceManager {
         int current = controller.current();
         int bounded = config.bound(current);
         if (current != bounded) { controller.apply(bounded); lastApplied = controller.current(); return; }
-        if (Math.abs(target - current) <= config.deadZoneChunks) { credit = 0; return; }
-        credit = Math.min(1, credit + Math.min(seconds, 2) * config.transitionSpeed);
-        int step = Math.min(Math.abs(target - current), (int)credit);
-        if (step > 0) {
-            controller.apply(config.bound(current + Integer.signum(target - current) * step));
-            lastApplied = controller.current();
-            credit -= step;
-        }
+        if (Math.abs(target - current) <= config.deadZoneChunks) return;
+        // Apply the accepted target in one change; geometry reuse handles the renderer.
+        controller.apply(config.bound(target));
+        lastApplied = controller.current();
     }
     public void restore(Minecraft client) {
         if (!active) return;
@@ -115,7 +110,6 @@ public final class DynamicDistanceManager {
         stableTarget.reset();
         smoothed = Double.NaN;
         lastAnalysis = 0;
-        credit = 0;
         return true;
     }
     public int target() { return target; }

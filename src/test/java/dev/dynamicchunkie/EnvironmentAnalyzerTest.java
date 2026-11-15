@@ -41,16 +41,19 @@ class EnvironmentAnalyzerTest {
         var mountain = new EnvironmentScore(1, 32, 1, 1, 1, true, 240, false, 0, 1, "Mountain");
         assertEquals(12, EnvironmentAnalyzer.target(cave, .9, c));
         assertEquals(16, EnvironmentAnalyzer.target(surface, .9, c));
+        assertEquals(16, EnvironmentAnalyzer.target(mountain, 1, c));
+        c.mountainDistance = 24;
+        c.highAltitudeDistance = 32;
         assertEquals(32, EnvironmentAnalyzer.target(mountain, 1, c));
     }
     @Test void invalidConfigurationIsBoundedAndFinite() {
         var c = new DynamicChunkieConfig();
         c.minRenderDistance = -20; c.maxRenderDistance = 900;
-        c.analysisIntervalMs = 0; c.transitionSpeed = Double.NaN;
+        c.analysisIntervalMs = 0;
         c.smoothingFactor = Double.POSITIVE_INFINITY; c.tunnelDistance = -1;
         c.validate();
         assertEquals(2, c.minRenderDistance); assertEquals(32, c.maxRenderDistance);
-        assertEquals(250, c.analysisIntervalMs); assertEquals(2, c.transitionSpeed);
+        assertEquals(250, c.analysisIntervalMs);
         assertEquals(.35, c.smoothingFactor); assertEquals(2, c.tunnelDistance);
     }
     @Test void configuredBoundsConstrainEveryProfileValue() {

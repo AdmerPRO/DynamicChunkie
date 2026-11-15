@@ -55,7 +55,6 @@ public final class ConfigScreen extends Screen {
             case 3 -> {
                 integer("analysisIntervalMs", draft.analysisIntervalMs, v -> draft.analysisIntervalMs = v);
                 integer("transitionIntervalMs", draft.transitionIntervalMs, v -> draft.transitionIntervalMs = v);
-                decimal("transitionSpeed", draft.transitionSpeed, v -> draft.transitionSpeed = v);
                 decimal("smoothingFactor", draft.smoothingFactor, v -> draft.smoothingFactor = v);
                 integer("deadZoneChunks", draft.deadZoneChunks, v -> draft.deadZoneChunks = v);
                 integer("targetStabilityMs", draft.targetStabilityMs, v -> draft.targetStabilityMs = v);

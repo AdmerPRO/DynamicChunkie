@@ -13,9 +13,9 @@ public final class DynamicChunkieConfig {
             enableElytraOptimization = true, debugMode = false, preserveRenderCache = true;
     public int minRenderDistance = 2, maxRenderDistance = 32, defaultRenderDistance = -1;
     public int tunnelDistance = 2, smallCaveDistance = 4, largeCaveDistance = 10,
-            undergroundOpenDistance = 12, surfaceDistance = 16, mountainDistance = 24, highAltitudeDistance = 32;
+            undergroundOpenDistance = 12, surfaceDistance = 16, mountainDistance = 16, highAltitudeDistance = 16;
     public int analysisIntervalMs = 750, transitionIntervalMs = 1000, deadZoneChunks = 1, targetStabilityMs = 1500;
-    public double transitionSpeed = 2, smoothingFactor = 0.35;
+    public double smoothingFactor = 0.35;
     // Persist before applying any dynamic value, so a crash cannot lose the user's setting.
     public boolean restorePending = false;
 
@@ -38,7 +38,6 @@ public final class DynamicChunkieConfig {
         targetStabilityMs = clamp(targetStabilityMs, 0, 10000);
         transitionIntervalMs = clamp(transitionIntervalMs, 500, 10000);
         deadZoneChunks = clamp(deadZoneChunks, 0, 4);
-        transitionSpeed = Double.isFinite(transitionSpeed) ? Math.max(0.25, Math.min(8, transitionSpeed)) : 2;
         smoothingFactor = Double.isFinite(smoothingFactor) ? Math.max(0.05, Math.min(1, smoothingFactor)) : 0.35;
         tunnelDistance = bound(tunnelDistance); smallCaveDistance = bound(smallCaveDistance);
         largeCaveDistance = bound(largeCaveDistance); undergroundOpenDistance = bound(undergroundOpenDistance); surfaceDistance = bound(surfaceDistance);
@@ -71,7 +70,6 @@ public final class DynamicChunkieConfig {
         transitionIntervalMs = other.transitionIntervalMs;
         deadZoneChunks = other.deadZoneChunks;
         targetStabilityMs = other.targetStabilityMs;
-        transitionSpeed = other.transitionSpeed;
         smoothingFactor = other.smoothingFactor;
     }
     public int bound(int n) { return clamp(n, minRenderDistance, maxRenderDistance); }

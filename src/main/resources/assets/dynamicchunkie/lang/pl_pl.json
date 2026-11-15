@@ -27,7 +27,6 @@
   "dynamicchunkie.config.highAltitudeDistance": "Duża wysokość",
   "dynamicchunkie.config.analysisIntervalMs": "Analiza (ms)",
   "dynamicchunkie.config.transitionIntervalMs": "Zmiana dystansu (ms)",
-  "dynamicchunkie.config.transitionSpeed": "Chunki / sekundę",
   "dynamicchunkie.config.smoothingFactor": "Wygładzanie wyniku",
   "dynamicchunkie.config.deadZoneChunks": "Martwa strefa (chunki)",
   "dynamicchunkie.config.targetStabilityMs": "Stabilność celu (ms)"

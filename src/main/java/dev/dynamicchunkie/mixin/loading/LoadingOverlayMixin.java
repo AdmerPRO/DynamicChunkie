@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.dynamicchunkie.loading.LoadingPresentation;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.screens.LoadingOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,9 +22,9 @@ abstract class LoadingOverlayMixin {
         finally {graphics.disableScissor();}
     }
     @WrapOperation(method="render",at=@At(value="INVOKE",
-            target="Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V"))
-    private void dynamicchunkie$noBrandBackground(GuiGraphics graphics,int a,int b,int c,int d,int color,Operation<Void> original) {
-        if (!LoadingPresentation.simple()) original.call(graphics,a,b,c,d,color);
+            target="Lnet/minecraft/client/gui/GuiGraphics;fill(Lnet/minecraft/client/renderer/RenderType;IIIII)V"))
+    private void dynamicchunkie$noBrandBackground(GuiGraphics graphics,RenderType type,int a,int b,int c,int d,int color,Operation<Void> original) {
+        if (!LoadingPresentation.simple()) original.call(graphics,type,a,b,c,d,color);
     }
     @ModifyVariable(method="drawProgressBar",at=@At("HEAD"),argsOnly=true,ordinal=0)
     private float dynamicchunkie$translucentBar(float opacity) {

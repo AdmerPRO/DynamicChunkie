@@ -15,6 +15,11 @@ public final class DynamicChunkie implements ClientModInitializer {
     private static DynamicDistanceManager manager;
     private static dev.dynamicchunkie.culling.EntityCulling culling;
     public static dev.dynamicchunkie.culling.EntityCulling entityCulling() { return culling; }
+    public static void onFrame() {
+        if (manager!=null) manager.onFrame(net.minecraft.client.Minecraft.getInstance());
+    }
+    public static DynamicDistanceManager distanceManager() {return manager;}
+    public static DynamicChunkieConfig configOrNull() {return manager==null?null:manager.config;}
     public static DynamicChunkieConfig config() { return manager.config; }
     public static boolean applyConfig(DynamicChunkieConfig value) {
         return manager.applyConfig(net.minecraft.client.Minecraft.getInstance(), value);
@@ -24,6 +29,10 @@ public final class DynamicChunkie implements ClientModInitializer {
         RenderCache.configure(config);
         manager = new DynamicDistanceManager(config);
         culling = new dev.dynamicchunkie.culling.EntityCulling(config);
+        net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player,world,hand,entity,hit) -> {
+            if (player==net.minecraft.client.Minecraft.getInstance().player) manager.noteCombat();
+            return net.minecraft.world.InteractionResult.PASS;
+        });
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientTickEvents.END_CLIENT_TICK.register(culling::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);

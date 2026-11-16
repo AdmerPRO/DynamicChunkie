@@ -11,6 +11,9 @@ import net.minecraft.world.level.block.Blocks;
 /** Checks object identity in a real renderer, rather than only checking option values. */
 public final class RenderCacheGameTest implements FabricClientGameTest {
     @Override public void runTest(ClientGameTestContext context) {
+        var backupSettings = context.computeOnClient(client -> DynamicChunkie.config().copy());
+        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
+        try {
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("sodium")) {
             new SodiumCacheGameTest().runTest(context);
             return;
@@ -60,6 +63,7 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
                 DynamicChunkie.LOG.info("Render cache regression passed: 2/8/2/4 preserved near meshes; block updates and full reload still work; simulation unchanged");
             });
         }
+        } finally { context.runOnClient(client -> DynamicChunkie.applyConfig(backupSettings)); }
     }
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);

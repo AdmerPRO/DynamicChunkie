@@ -1,15 +1,15 @@
 # DynamicChunkie
 
 A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby geometry.
-MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
-0.166.2+26.3. It uses focused client mixins to retain existing render-section storage, with optional
-integration for Sodium 0.9.3-beta.1+mc26.3.
+MVP for **Minecraft 26.1.2**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
+0.155.3+26.1.2. It uses focused client mixins to retain existing render-section storage, with optional
+integration for Sodium 0.9.2+mc26.1.2.
 It has no reflection, replacement renderer, terrain Section Culling or server component. Entity occlusion is described below. Simulation Distance is never read or modified.
 
 ## Install and build
 
-Install Fabric for Minecraft 26.3. Put Fabric API and
-`build/libs/dynamicchunkie-0.1.0.jar` in the instance's `mods` directory.
+Install Fabric for Minecraft 26.1.2. Put Fabric API and
+`build/libs/dynamicchunkie-mc26.1.2-0.1.0.jar` in the instance's `mods` directory.
 Do not install the sources JAR. The mod version stays at **0.1.0** until explicitly changed by the user.
 
 With JDK 25 selected:
@@ -28,7 +28,7 @@ Windows: `gradlew.bat build`. Gradle downloads build dependencies on the first r
 
 The mod creates `config/dynamicchunkie.json` at startup. An example is included at
 [config/dynamicchunkie.example.json](config/dynamicchunkie.example.json).
-For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.3.
+For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.1.2.
 Open **Mods → DynamicChunkie → Configure**. The four pages cover general switches, caves
 and limits, open-terrain profiles, and timing/stability. Save validates and applies settings
 immediately and writes the JSON file. Cancel/Escape discards edits; Defaults resets the
@@ -130,37 +130,26 @@ Sky detection uses the loaded column's existing heightmap. Direction vectors are
 vanilla raycasting still creates small temporary objects. Config writes occur at lifecycle,
 command and manual-setting changes, never on each analysis or transition.
 
-This port uses Minecraft 26.3's unobfuscated official class names, Fabric Loom 1.17.21,
+This port uses Minecraft 26.1.2's unobfuscated official class names, Fabric Loom 1.17.21,
 and Gradle 9.6.0; Yarn mappings and JAR remapping are no longer needed.
 The selected Minecraft JAR's `Options`, `OptionInstance.IntRange`, raycast APIs,
 and GUI extraction APIs were inspected during the port.
-See [Fabric's 26.3 migration notes](https://www.fabricmc.net/2026/09/15/263.html).
+See [Fabric's 26.1.2 migration notes](https://fabricmc.net/2026/03/14/261.html).
 The debug HUD uses Fabric's `HudElementRegistry` and the game's `GuiGraphicsExtractor`.
 
 The earlier 1.21.1 implementation remains in Git history. The current artifact targets
-26.3 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
+26.1.2 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
 
 ## Retaining nearby chunks without full rebuilds
 
-In vanilla 26.3, the RD comparison in `LevelExtractor.extract` calls `allChanged`.
-That recreates update tracking and tells `LevelRenderer` to invalidate compiled geometry,
-release all section buffers, and recreate the view area. Merely stepping the slider slowly
-therefore still causes repeated full rebuilds.
-
-With `preserveRenderCache=true`, the mod reserves vanilla render-section slots and update
-tracking up to the configured maximum when a world/renderer initializes. It keeps the same
-`ViewArea`, render sections and mesh buffers during distance changes within that capacity.
-The engine's normal visibility traversal receives the current distance, not the reserved
-capacity. Its normal asynchronous graph update retains the previous graph until the new
-one is ready. This is reuse of Minecraft's rendering machinery, not a custom renderer or
-a new Section/Occlusion Culling implementation.
-
-Three mixins are necessary because Fabric has no supported event for avoiding this reset:
-
-- `LevelRendererMixin` reserves bounded section storage at normal renderer initialization.
-- `ViewAreaMixin` separates allocated capacity from the active vanilla traversal radius.
-- `LevelExtractorMixin` replaces only the RD-triggered full reset with a standard graph
-  invalidation, and reserves matching block-update tracking.
+In vanilla 26.1.x, the RD comparison in `LevelRenderer.cullTerrain` calls
+`allChanged`, which normally releases and recreates render storage. The mixins reserve
+a bounded `ViewArea` at initialization and update its active traversal radius without
+replacing nearby section meshes. Standard visibility-graph invalidation updates visibility.
+Block updates, real resource/graphics reloads and world changes still use native rebuilds.
+`LevelRendererMixin` handles this vanilla path; `ViewAreaMixin` tracks capacity and radius.
+Sodium replaces `cullTerrain` on these releases, so the vanilla renderer mixin is skipped
+when Sodium is installed; its separate distance adapter preserves Sodium's section manager.
 
 For example, with 2 chunks already rendered, raising RD to 8 preserves the near section
 objects and their geometry. Newly needed data/geometry outside that area still loads and
@@ -175,8 +164,8 @@ storage handling.
 
 ### Sodium compatibility
 
-**Tested: Sodium 0.9.3-beta.1+mc26.3** (Modrinth version
-`mc26.3-0.9.3-beta.1-fabric`). Sodium is optional and is not bundled or required at runtime.
+**Tested: Sodium 0.9.2+mc26.1.2** (Modrinth version
+`mc26.1.2-0.9.2-fabric`). Sodium is optional and is not bundled or required at runtime.
 
 Earlier builds disabled reuse with Sodium, which allowed its separate RD-triggered
 `SodiumWorldRenderer.reload()` to destroy/recreate its section manager on each step.
@@ -199,24 +188,13 @@ can still cause frame-time spikes; this change does not promise zero lag.
 
 ## Validation and manual acceptance checks
 
-Twenty unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
-profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
-target stability under doorway oscillation, isolated UI drafts and restoration metadata preservation.
-Compilation validates the selected Minecraft and Fabric APIs.
-The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
-Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
-the mod configuration, and the user confirmed that Minecraft opened. On this machine the
-game fell back from OpenGL to Vulkan; missing narrator libraries and development-account
-Realms authentication produced unrelated warnings. The automated client-world regression also passed: repeated 2/8/2/4 transitions preserved
-the same nearby section objects and compiled meshes, block changes still rebuilt geometry,
-a genuine reload recreated storage, and Simulation Distance remained unchanged.
-The Sodium + Mod Menu client test also passed with the exact versions above: repeated
-RD changes retained the section manager, near sections, visibility data and mesh storage;
-every sampled transition frame retained visible terrain. Block updates and genuine reloads
-still worked and Simulation Distance stayed unchanged. The Mod Menu provider was discovered,
-its screen opened, and edited settings were saved/applied successfully.
-Visual smoothness with the user's world/settings, long-flight memory usage and the following
-environmental checks remain manual:
+48 unit tests cover environment scoring, altitude gating, profile interpolation,
+validated settings, stable targets, exact chunk DDA, adaptive performance/cache policies
+and teleport/combat recovery. Graphical regressions check near-mesh reuse, block updates,
+genuine reloads, entity visibility and movement/block breaking during resource reloads.
+See [PORTS.md](PORTS.md) for renderer and version-specific results.
+Visual smoothness with the user's world/settings, long-flight memory usage and the
+following environmental checks remain manual:
 
 1. Set RD to 18 and Simulation Distance to 7; join a world and enable the debug HUD.
 2. Enter a long 1×2 tunnel. Wait 15–20 seconds; target/current should fall toward 2–4.
@@ -227,7 +205,7 @@ environmental checks remain manual:
 5. Enter a sealed small room at Y=240. Target must decrease despite altitude.
 6. Walk repeatedly through a cave entrance. Confirm score smoothing, the one-chunk dead
    zone, target stability window, and no more than one RD change per transition interval.
-   Each accepted target must be reached in one RD change, without intermediate values.
+   Normal growth defaults to +2 chunks/s; teleport recovery grows +1 chunk/s.
 7. Fly Elytra over open terrain, then through a safe enclosed passage. Check increased
    sample frequency, open-flight growth and enclosed-flight reduction.
 8. Restart with min=6/max=12. Check all dynamic values remain within 6–12 after the initial
@@ -321,3 +299,5 @@ See [PORTS.md](PORTS.md) for maintained Minecraft branches and validation covera
 
 See [adaptive policies](docs/adaptive-controls.md) for prediction, frame-time budgets,
 memory accounting, teleport/combat rules, transparent loading and manual validation.
+
+See [PORTS.md](PORTS.md) for other targets. Use the artifact for your exact Minecraft version.

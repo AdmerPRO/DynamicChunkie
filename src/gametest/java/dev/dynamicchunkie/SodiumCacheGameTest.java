@@ -58,16 +58,16 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                     });
                 }
             }
-            long meshBytes = context.computeOnClient(client -> originalSection.getLastMeshResultSize());
+            long meshBytes = context.computeOnClient(client -> originalSection.getLastUploadFrame());
             world.getServer().runOnServer(server -> server.overworld()
                     .setBlockAndUpdate(ground, Blocks.AIR.defaultBlockState()));
-            context.waitFor(client -> originalSection.getLastMeshResultSize() != meshBytes, 400);
+            context.waitFor(client -> originalSection.getLastUploadFrame() != meshBytes, 400);
             context.runOnClient(client -> client.levelRenderer.allChanged());
             context.waitFor(client -> manager() != originalManager, 200);
             testAbruptTargets(context);
             context.runOnClient(client -> {
                 client.setScreen(null);
-                DynamicChunkie.LOG.info("Sodium beta.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
+                DynamicChunkie.LOG.info("Sodium compatibility regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
     }

@@ -4,21 +4,21 @@ plugins {
 }
 version = '0.1.0'
 group = 'dev.dynamicchunkie'
-base { archivesName = 'dynamicchunkie-mc1.21.11' }
+base { archivesName = 'dynamicchunkie-mc1.21.2' }
 repositories {
     mavenCentral()
     maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
 }
 dependencies {
-    minecraft 'com.mojang:minecraft:1.21.11'
+    minecraft 'com.mojang:minecraft:1.21.2'
     mappings loom.officialMojangMappings()
     modImplementation 'net.fabricmc:fabric-loader:0.20.1'
-    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.141.6+1.21.11'
-    modCompileOnly 'maven.modrinth:sodium:mc1.21.11-0.8.14-fabric'
-    modCompileOnly 'maven.modrinth:modmenu:17.0.1'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.106.1+1.21.2'
+    modCompileOnly 'maven.modrinth:sodium:mc1.21.3-0.6.13-fabric'
+    modCompileOnly 'maven.modrinth:modmenu:12.0.1'
     if (providers.gradleProperty('withSodium').isPresent()) {
-        modRuntimeOnly 'maven.modrinth:sodium:mc1.21.11-0.8.14-fabric'
-        modRuntimeOnly 'maven.modrinth:modmenu:17.0.1'
+        modRuntimeOnly 'maven.modrinth:sodium:mc1.21.3-0.6.13-fabric'
+        modRuntimeOnly 'maven.modrinth:modmenu:12.0.1'
     }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -28,18 +28,10 @@ tasks.withType(JavaCompile).configureEach { options.release = 21 }
 test { useJUnitPlatform() }
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
 
-// Client integration tests run separately and are never included in the distributed mod.
-fabricApi {
-    configureTests {
-        createSourceSet = true
-        modId = 'dynamicchunkie-test'
-        enableGameTests = false
-        enableClientGameTests = true
-        eula = true
-    }
-}
-
-configurations.gametestCompileOnly.extendsFrom(configurations.compileOnly)
 tasks.withType(Jar).configureEach {
     from('LICENSE') { rename { 'LICENSE_dynamicchunkie' } }
+}
+
+if (providers.gradleProperty('smokeTest').isPresent()) {
+    loom { runs { client { vmArg '-Ddynamicchunkie.smokeTest=true' } } }
 }

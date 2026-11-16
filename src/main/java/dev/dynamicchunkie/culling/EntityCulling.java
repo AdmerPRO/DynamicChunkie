@@ -51,7 +51,7 @@ public final class EntityCulling {
             states.keySet().removeIf(entity -> entity.isRemoved() || !candidate(entity, client));
             snapshotAt = now;
         }
-        Vec3 camera = client.gameRenderer.getMainCamera().position();
+        Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
         int count = Math.min(config.entityCullingBudget, queue.size());
         for (int i = 0; i < count; i++) {
             Entity entity = queue.removeFirst();

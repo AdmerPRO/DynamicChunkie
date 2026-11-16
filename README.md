@@ -100,10 +100,12 @@ value from Y=160–240. Altitude alone cannot increase the score in a tight room
 Disabling sky detection also disables the sky-based cave ceiling.
 
 An exponential moving average, target hysteresis, integer dead zone, a target stability
-window, and a minimum change interval prevent rapid oscillation. Once accepted, the target
-is applied in **one abrupt change** (for example 16 → 2 or 2 → 16), without intermediate
-one-chunk steps. `transitionIntervalMs` still limits change frequency. The old
-`transitionSpeed` key is ignored and removed when the configuration is saved.
+window, and a minimum change interval prevent rapid oscillation. Reductions apply directly;
+normal increases are limited to two chunks per second (the default is +2 each second).
+Longer configured transition intervals remain available. A teleport or dimension change
+starts at `max(2, minRenderDistance)` and recovers by one chunk per second. Attacking or
+being hurt exempts the player for `combatGraceMs`; combat during recovery cancels the
+slow ramp. All changes respect configured limits.
 The HUD reports the raw score and accepted target; the latter includes smoothing,
 profile ceilings and hysteresis. Environmental labels describe the raw sample.
 
@@ -119,10 +121,11 @@ existing chunk-loading path receives the new distance. It never changes Simulati
 server simulation settings, entity simulation, or tick code. In multiplayer, the server's
 view-distance limit still applies.
 
-World access stays on the client tick thread. There are at most 27 short raycasts per
+World access stays on the client tick thread. There are at most 32 short raycasts per
 analysis, no block-volume scans, background world access, or custom chunk requests.
-Before each ray, loaded-chunk lookups check the conservative bounding rectangle of its
-path. Any missing chunk rejects that ray as blocked, avoiding raycasts into unloaded terrain.
+Before each ray, chunk-grid DDA checks only chunks actually intersected by the segment,
+including exact diagonal crossings. Missing intersected chunks reject that ray, avoiding
+world access into unloaded terrain.
 Sky detection uses the loaded column's existing heightmap. Direction vectors are reused;
 vanilla raycasting still creates small temporary objects. Config writes occur at lifecycle,
 command and manual-setting changes, never on each analysis or transition.
@@ -258,7 +261,7 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
 - Unknown chunks are conservatively blocked. Chunk arrival can temporarily lower targets,
   especially directly after joining or teleporting.
 - Profile values are heuristics, not measured visibility guarantees. There is no FPS feedback,
-  predictive loading, Section Culling, terrain Occlusion Culling, or custom rendering.
+  custom predictive chunk requests, Section Culling, terrain Occlusion Culling, or custom rendering.
 - Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
   Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.
 - Other mods controlling the same option can conflict. Only the exact Sodium version listed
@@ -313,3 +316,8 @@ The client regression places a pig behind stone/glass and checks glowing/player/
 exemptions. Long-session visual correctness with other entity/model mods remains manual.
 
 See [PORTS.md](PORTS.md) for maintained Minecraft branches and validation coverage.
+
+## Adaptive controls and loading UI
+
+See [adaptive policies](docs/adaptive-controls.md) for prediction, frame-time budgets,
+memory accounting, teleport/combat rules, transparent loading and manual validation.

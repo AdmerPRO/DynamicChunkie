@@ -12,7 +12,14 @@
     "sodium.SodiumRendererAccessor",
     "EntityRenderDispatcherMixin",
     "EnvironmentRevisionMixin",
-    "PerformanceFrameMixin"
+    "PerformanceFrameMixin",
+    "loading.LoadingOverlayMixin",
+    "loading.WorldLoadingScreenMixin",
+    "loading.LoadingGuiMixin",
+    "loading.LoadingPauseMixin",
+    "loading.LoadingGameplayMixin",
+    "loading.LoadingKeyboardMixin",
+    "loading.LoadingMouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

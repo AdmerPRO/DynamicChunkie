@@ -11,11 +11,11 @@ public final class LoadingPresentation {
     private LoadingPresentation() {}
     public static boolean simple() {
         var config=DynamicChunkie.configOrNull();
-        return config!=null && config.simpleLoadingScreens;
+        return config!=null && config.enabled && config.simpleLoadingScreens;
     }
     public static boolean readyForInput() {
         var config=DynamicChunkie.configOrNull();
-        if (config==null || !config.simpleLoadingScreens || !config.loadingInputPassthrough) return false;
+        if (config==null || !config.enabled || !config.simpleLoadingScreens || !config.loadingInputPassthrough) return false;
         var client=Minecraft.getInstance();
         if (client.level==null || client.player==null) return false;
         var p=client.player.blockPosition();

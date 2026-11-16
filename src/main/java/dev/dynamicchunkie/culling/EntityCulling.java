@@ -51,7 +51,7 @@ public final class EntityCulling {
             states.keySet().removeIf(entity -> entity.isRemoved() || !candidate(entity, client));
             snapshotAt = now;
         }
-        Vec3 camera = client.gameRenderer.getMainCamera().position();
+        Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
         int count = Math.min(config.entityCullingBudget, queue.size());
         for (int i = 0; i < count; i++) {
             Entity entity = queue.removeFirst();
@@ -103,7 +103,7 @@ public final class EntityCulling {
     private int blockAt(int x, int y, int z) {
         if (!world.getChunkSource().hasChunk(x >> 4, z >> 4)) return -1;
         cursor.set(x, y, z);
-        return world.getBlockState(cursor).isSolidRender() ? 1 : 0;
+        return world.getBlockState(cursor).isSolidRender(world, cursor) ? 1 : 0;
     }
     public boolean shouldCull(Entity entity, double cameraX, double cameraY, double cameraZ) {
         if (!enabled() || world == null || !candidate(entity, Minecraft.getInstance())) return false;

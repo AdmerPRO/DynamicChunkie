@@ -27,7 +27,10 @@ public final class DynamicChunkie implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientTickEvents.END_CLIENT_TICK.register(culling::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> LOG.info("DynamicChunkie client initialized"));
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            LOG.info("DynamicChunkie client initialized");
+            if (Boolean.getBoolean("dynamicchunkie.smokeTest")) client.stop();
+        });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); });
         DebugOverlay.register(manager);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->

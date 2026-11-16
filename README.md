@@ -199,24 +199,13 @@ can still cause frame-time spikes; this change does not promise zero lag.
 
 ## Validation and manual acceptance checks
 
-Twenty unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
-profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
-target stability under doorway oscillation, isolated UI drafts and restoration metadata preservation.
-Compilation validates the selected Minecraft and Fabric APIs.
-The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
-Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
-the mod configuration, and the user confirmed that Minecraft opened. On this machine the
-game fell back from OpenGL to Vulkan; missing narrator libraries and development-account
-Realms authentication produced unrelated warnings. The automated client-world regression also passed: repeated 2/8/2/4 transitions preserved
-the same nearby section objects and compiled meshes, block changes still rebuilt geometry,
-a genuine reload recreated storage, and Simulation Distance remained unchanged.
-The Sodium + Mod Menu client test also passed with the exact versions above: repeated
-RD changes retained the section manager, near sections, visibility data and mesh storage;
-every sampled transition frame retained visible terrain. Block updates and genuine reloads
-still worked and Simulation Distance stayed unchanged. The Mod Menu provider was discovered,
-its screen opened, and edited settings were saved/applied successfully.
-Visual smoothness with the user's world/settings, long-flight memory usage and the following
-environmental checks remain manual:
+48 unit tests cover environment scoring, altitude gating, profile interpolation,
+validated settings, stable targets, exact chunk DDA, adaptive performance/cache policies
+and teleport/combat recovery. Graphical regressions check near-mesh reuse, block updates,
+genuine reloads, entity visibility and movement/block breaking during resource reloads.
+See [PORTS.md](PORTS.md) for renderer and version-specific results.
+Visual smoothness with the user's world/settings, long-flight memory usage and the
+following environmental checks remain manual:
 
 1. Set RD to 18 and Simulation Distance to 7; join a world and enable the debug HUD.
 2. Enter a long 1×2 tunnel. Wait 15–20 seconds; target/current should fall toward 2–4.
@@ -227,7 +216,7 @@ environmental checks remain manual:
 5. Enter a sealed small room at Y=240. Target must decrease despite altitude.
 6. Walk repeatedly through a cave entrance. Confirm score smoothing, the one-chunk dead
    zone, target stability window, and no more than one RD change per transition interval.
-   Each accepted target must be reached in one RD change, without intermediate values.
+   Normal growth defaults to +2 chunks/s; teleport recovery grows +1 chunk/s.
 7. Fly Elytra over open terrain, then through a safe enclosed passage. Check increased
    sample frequency, open-flight growth and enclosed-flight reduction.
 8. Restart with min=6/max=12. Check all dynamic values remain within 6–12 after the initial

@@ -319,3 +319,5 @@ The client regression places a pig behind stone/glass and checks glowing/player/
 exemptions. Long-session visual correctness with other entity/model mods remains manual.
 
 See [PORTS.md](PORTS.md) for all maintained Minecraft target branches.
+
+See [adaptive controls and transparent loading](docs/adaptive-controls.md).

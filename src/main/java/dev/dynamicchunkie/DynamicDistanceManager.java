@@ -26,7 +26,7 @@ public final class DynamicDistanceManager {
         long now=System.nanoTime();
         long cpu=THREADS.isCurrentThreadCpuTimeSupported()?THREADS.getCurrentThreadCpuTime():-1;
         boolean sampling=config.enabled && client.level!=null && client.player!=null &&
-                client.gui.screen()==null && !client.isPaused();
+                client.screen==null && !client.isPaused();
         if (sampling && wasSampling && lastFrame!=0) {
             performance.record((now-lastFrame)/1e6,client.getFrameTimeNs()/1e6,
                     cpu>=0 && lastCpu>=0?(cpu-lastCpu)/1e6:Double.NaN,client.getGpuUtilization());
@@ -57,7 +57,7 @@ public final class DynamicDistanceManager {
         }
         long now=System.nanoTime();
         if (client.player.hurtTime>0) transitions.combat(now);
-        if (client.gui.screen()!=null || client.isPaused()) {transitions.pause(now);return;}
+        if (client.screen!=null || client.isPaused()) {transitions.pause(now);return;}
         if (!active) {
             config.defaultRenderDistance=controller.current();
             config.restorePending=true;

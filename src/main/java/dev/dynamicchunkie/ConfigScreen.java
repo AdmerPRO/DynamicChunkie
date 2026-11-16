@@ -149,7 +149,7 @@ public final class ConfigScreen extends Screen {
         if (DynamicChunkie.applyConfig(draft)) onClose();
         else error = text("saveFailed");
     }
-    @Override public void onClose() { minecraft.gui.setScreen(parent); }
+    @Override public void onClose() { minecraft.setScreen(parent); }
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         graphics.text(font, title, (width - font.width(title)) / 2, 10, 0xFFFFFFFF);

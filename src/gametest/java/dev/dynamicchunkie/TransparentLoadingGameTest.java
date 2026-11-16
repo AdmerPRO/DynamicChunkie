@@ -20,22 +20,22 @@ public final class TransparentLoadingGameTest implements FabricClientGameTest {
             world.getServer().runCommand("gamemode creative @a");
             world.getServer().runCommand("fill -8 99 -8 8 99 8 minecraft:stone");
             world.getServer().runCommand("tp @a 0.5 100 0.5 -90 0");
-            world.getConnection().waitForChunksRender();
+            world.getClientLevel().waitForChunksRender();
             context.runOnClient(client -> {
                 var settings=backup.copy();settings.enabled=true;settings.simpleLoadingScreens=true;settings.loadingInputPassthrough=true;
                 DynamicChunkie.applyConfig(settings);
-                client.gui.setScreen(null);
-                client.gui.setOverlay(new LoadingOverlay(client,new ReloadInstance() {
+                client.setScreen(null);
+                client.setOverlay(new LoadingOverlay(client,new ReloadInstance() {
                     public CompletableFuture<?> done() {return completion;}
                     public float getActualProgress() {return .75f;}
                 }, failure -> {if (failure.isPresent()) throw new AssertionError(failure.get());callbacks.incrementAndGet();},false));
             });
             context.waitTicks(5);
             context.runOnClient(client -> {
-                require(client.gui.overlay() instanceof LoadingOverlay,"Native overlay was removed prematurely");
-                require(!client.gui.overlay().isPausing(),"Reload still pauses active gameplay");
+                require(client.getOverlay() instanceof LoadingOverlay,"Native overlay was removed prematurely");
+                require(!client.getOverlay().isPauseScreen(),"Reload still pauses active gameplay");
                 LoadingPresentation.beginInput();
-                try {require(client.gui.overlay()==null,"Input is still blocked by reload overlay");}
+                try {require(client.getOverlay()==null,"Input is still blocked by reload overlay");}
                 finally {LoadingPresentation.endInput();}
             });
             double before=context.computeOnClient(client -> client.player.getX());
@@ -54,7 +54,7 @@ public final class TransparentLoadingGameTest implements FabricClientGameTest {
                 DynamicChunkie.applyConfig(enabled);
             });
             completion.complete(null);
-            context.waitFor(client -> client.gui.overlay()==null && callbacks.get()==1,200);
+            context.waitFor(client -> client.getOverlay()==null && callbacks.get()==1,200);
             DynamicChunkie.LOG.info("Transparent reload regression passed: movement, block breaking and native completion callback");
         } finally {
             completion.complete(null);

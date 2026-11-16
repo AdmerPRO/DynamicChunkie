@@ -14,14 +14,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ViewArea.class)
 abstract class ViewAreaMixin implements CachedViewArea {
+    @org.spongepowered.asm.mixin.Shadow protected abstract SectionRenderDispatcher.RenderSection getRenderSectionAt(net.minecraft.core.BlockPos position);
+    @Override public Object dynamicchunkie$sectionAt(net.minecraft.core.BlockPos position) { return getRenderSectionAt(position); }
     @Unique private int dynamicchunkie$capacity;
     @Unique private boolean dynamicchunkie$managed;
     // Vanilla's asynchronous graph traversal must not read Minecraft options.
     @Unique private volatile int dynamicchunkie$visibleRadius;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void dynamicchunkie$rememberCapacity(SectionRenderDispatcher dispatcher, int minY, int maxY,
-            int minSectionY, int maxSectionY, int radius, SectionOcclusionGraph graph, CallbackInfo ci) {
+    private void dynamicchunkie$rememberCapacity(SectionRenderDispatcher dispatcher, net.minecraft.world.level.Level level,
+            int radius, net.minecraft.client.renderer.LevelRenderer renderer, CallbackInfo ci) {
         dynamicchunkie$capacity = radius;
         dynamicchunkie$visibleRadius = radius;
         dynamicchunkie$managed = RenderCache.enabled();

@@ -6,7 +6,8 @@
   "entrypoints": {
     "fabric-client-gametest": [
       "dev.dynamicchunkie.RenderCacheGameTest",
-      "dev.dynamicchunkie.EntityCullingGameTest"
+      "dev.dynamicchunkie.EntityCullingGameTest",
+      "dev.dynamicchunkie.TransparentLoadingGameTest"
     ]
   }
 }

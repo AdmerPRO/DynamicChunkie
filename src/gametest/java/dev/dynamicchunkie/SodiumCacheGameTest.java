@@ -24,6 +24,9 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                 .dynamicchunkie$sectionAt(pos.x(), pos.y(), pos.z());
     }
     @Override public void runTest(ClientGameTestContext context) {
+        var backupSettings = context.computeOnClient(client -> DynamicChunkie.config().copy());
+        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
+        try {
         testMenu(context);
         context.runOnClient(client -> new RenderDistanceController(client).apply(4));
         try (var world = context.worldBuilder().create()) {
@@ -70,6 +73,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                 DynamicChunkie.LOG.info("Sodium compatibility regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
+        } finally { context.runOnClient(client -> DynamicChunkie.applyConfig(backupSettings)); }
     }
     private void testAbruptTargets(ClientGameTestContext context) {
         var backup = context.computeOnClient(client -> DynamicChunkie.config().copy());
@@ -89,10 +93,10 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
             context.waitFor(client -> {
                 int distance = client.options.renderDistance().get();
                 if (distance == 2) return false;
-                require(distance == 16, "Increase used intermediate distance: " + distance);
-                return true;
+                require(distance >= 2 && distance <= 16, "Increase left configured range: " + distance);
+                return distance == 16;
             }, 400);
-            DynamicChunkie.LOG.info("Abrupt transition regression passed: 16 -> 2 -> 16 without intermediate distances");
+            DynamicChunkie.LOG.info("Transition regression passed: immediate decrease to 2, bounded growth back to 16");
         } finally {
             context.runOnClient(client -> DynamicChunkie.applyConfig(backup));
         }

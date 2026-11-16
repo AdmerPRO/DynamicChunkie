@@ -36,7 +36,13 @@ public final class RenderCache {
         return sodiumCompatible ? Math.max(actual, 32) : actual;
     }
     public static int allocationRadius(int actual) {
-        return enabled() ? Math.max(actual, config.maxRenderDistance) : actual;
+        if (!enabled()) return actual;
+        int height=24;
+        var level=net.minecraft.client.Minecraft.getInstance().level;
+        if (level!=null) height=level.getMaxSectionY()-level.getMinSectionY()+1;
+        return config.enableMemoryManagement ?
+                dev.dynamicchunkie.adaptive.MemoryBudget.reservationRadius(actual,config.maxRenderDistance,height,config.cacheMemoryLimitMb) :
+                Math.max(actual,config.maxRenderDistance);
     }
     public static void recordReuse() { preservedChanges++; }
     public static long preservedChanges() { return preservedChanges; }

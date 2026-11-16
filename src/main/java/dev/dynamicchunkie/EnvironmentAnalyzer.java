@@ -9,16 +9,25 @@ public final class EnvironmentAnalyzer {
         var r = rays.sample(client.level, p);
         boolean sky = c.enableSkyDetection && client.level.canSeeSky(p.blockPosition());
         double altitude = p.getY();
-        double open = openness(r.average(), r.horizontal(), r.vertical(), r.clear(), sky, altitude, c.enableAltitudeFactor);
+        double directional = c.enableDirectionalVisibility ?
+                dev.dynamicchunkie.adaptive.AnalysisPolicy.directional(r.horizontal(),r.front(),r.gaze()) : r.horizontal();
+        double open = openness(r.average(), directional, r.vertical(), r.clear(), sky, altitude, c.enableAltitudeFactor);
         boolean flight = p.isFallFlying();
         double speed = p.getDeltaMovement().length() * 20;
         if (c.enableElytraOptimization && flight)
             open = Math.min(1, open + 0.10 * Math.min(1, speed / 30) * r.horizontal() * r.forward());
+        double predicted=0;
+        if (c.enablePrediction && flight && speed>=8 && r.horizontal()>=.55 && r.forward()>=.65) {
+            predicted=rays.preview(client.level,p,c.predictionLookaheadMs);
+            double alignment=p.getDeltaMovement().normalize().dot(p.getLookAngle());
+            open=Math.min(1,open+dev.dynamicchunkie.adaptive.AnalysisPolicy.predictionBoost(
+                    speed,r.horizontal(),r.forward(),r.gaze(),predicted,alignment));
+        }
         String name = open < .13 ? "Narrow Tunnel" : open < .30 ? "Small Cave" :
                 !sky ? "Large Cave / Covered Area" : open < .78 ? "Surface" :
                 altitude < 160 ? "Mountain / Open Area" : "High Open Sky";
         return new EnvironmentScore(open, r.average(), r.horizontal(), r.vertical(), r.clear(),
-                sky, altitude, flight, speed, r.forward(), name);
+                sky, altitude, flight, speed, r.forward(), name, r.front(),r.back(),r.left(),r.right(),r.gaze(),predicted);
     }
     static double openness(double average, double horizontal, double vertical, double clear,
                            boolean sky, double altitude, boolean altitudeEnabled) {

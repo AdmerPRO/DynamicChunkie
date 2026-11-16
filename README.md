@@ -107,7 +107,7 @@ Disabling sky detection also disables the sky-based cave ceiling.
 
 An exponential moving average, target hysteresis, integer dead zone, a target stability
 window, and a minimum change interval prevent rapid oscillation. Once accepted, the target
-is applied in **one abrupt change** (for example 16 → 2 or 2 → 16), without intermediate
+is applied in **a bounded transition** (for example 16 → 2 or 2 → 16), without intermediate
 one-chunk steps. `transitionIntervalMs` still limits change frequency. The old
 `transitionSpeed` key is ignored and removed when the configuration is saved.
 The HUD reports the raw score and accepted target; the latter includes smoothing,

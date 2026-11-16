@@ -11,6 +11,12 @@ public final class DynamicChunkieConfig {
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
     public boolean enabled = true, enableAltitudeFactor = true, enableSkyDetection = true,
             enableElytraOptimization = true, debugMode = false, preserveRenderCache = true;
+    public boolean enablePrediction = true, enableDirectionalVisibility = true, enableAdaptiveAnalysis = true;
+    public boolean enableFpsAdaptive = true, enableHardwareAdaptive = true, enableMemoryManagement = true;
+    public boolean enableTeleportRecovery = true, simpleLoadingScreens = true, loadingInputPassthrough = true;
+    public int stationaryIntervalMs = 1500, walkingIntervalMs = 750, elytraIntervalMs = 250;
+    public int analysisCacheTtlMs = 3000, analysisCacheEntries = 128, cacheMemoryLimitMb = 256;
+    public int targetFps = 60, predictionLookaheadMs = 1000, teleportThresholdBlocks = 48, combatGraceMs = 5000;
     public boolean enableEntityCulling = true;
     public int entityCullingBudget = 16, entityCullingDistance = 64;
     public int minRenderDistance = 2, maxRenderDistance = 32, defaultRenderDistance = -1;
@@ -34,6 +40,17 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        stationaryIntervalMs = clamp(stationaryIntervalMs, 250, 10000);
+        walkingIntervalMs = clamp(walkingIntervalMs, 250, 5000);
+        elytraIntervalMs = clamp(elytraIntervalMs, 100, 2000);
+        analysisCacheTtlMs = clamp(analysisCacheTtlMs, 0, 10000);
+        analysisCacheEntries = clamp(analysisCacheEntries, 1, 2048);
+        cacheMemoryLimitMb = clamp(cacheMemoryLimitMb, 16, 4096);
+        targetFps = clamp(targetFps, 15, 240);
+        predictionLookaheadMs = clamp(predictionLookaheadMs, 0, 2000);
+        teleportThresholdBlocks = clamp(teleportThresholdBlocks, 16, 512);
+        combatGraceMs = clamp(combatGraceMs, 1000, 15000);
+
         entityCullingBudget = clamp(entityCullingBudget, 1, 64);
         entityCullingDistance = clamp(entityCullingDistance, 8, 96);
         minRenderDistance = clamp(minRenderDistance, 2, 32);
@@ -55,6 +72,26 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        enablePrediction = other.enablePrediction;
+        enableDirectionalVisibility = other.enableDirectionalVisibility;
+        enableAdaptiveAnalysis = other.enableAdaptiveAnalysis;
+        enableFpsAdaptive = other.enableFpsAdaptive;
+        enableHardwareAdaptive = other.enableHardwareAdaptive;
+        enableMemoryManagement = other.enableMemoryManagement;
+        enableTeleportRecovery = other.enableTeleportRecovery;
+        simpleLoadingScreens = other.simpleLoadingScreens;
+        loadingInputPassthrough = other.loadingInputPassthrough;
+        stationaryIntervalMs = other.stationaryIntervalMs;
+        walkingIntervalMs = other.walkingIntervalMs;
+        elytraIntervalMs = other.elytraIntervalMs;
+        analysisCacheTtlMs = other.analysisCacheTtlMs;
+        analysisCacheEntries = other.analysisCacheEntries;
+        cacheMemoryLimitMb = other.cacheMemoryLimitMb;
+        targetFps = other.targetFps;
+        predictionLookaheadMs = other.predictionLookaheadMs;
+        teleportThresholdBlocks = other.teleportThresholdBlocks;
+        combatGraceMs = other.combatGraceMs;
+
         enableEntityCulling = other.enableEntityCulling;
         entityCullingBudget = other.entityCullingBudget;
         entityCullingDistance = other.entityCullingDistance;

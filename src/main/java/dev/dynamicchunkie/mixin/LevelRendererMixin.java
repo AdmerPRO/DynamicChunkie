@@ -29,7 +29,7 @@ abstract class LevelRendererMixin implements dev.dynamicchunkie.RenderStorageAcc
             cached.dynamicchunkie$setVisibleRadius(minecraft.options.getEffectiveRenderDistance());
     }
 
-    @Redirect(method = "cullTerrain", at = @At(value = "INVOKE",
+    @Redirect(method = "setupRender", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/LevelRenderer;allChanged()V"))
     private void dynamicchunkie$reuse(LevelRenderer renderer) {
         int radius = minecraft.options.getEffectiveRenderDistance();

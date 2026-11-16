@@ -46,3 +46,26 @@ movement/block breaking during an unfinished reload, and native completion callb
 1.21.1–1.21.4 pass startup checks; their in-world loading/input behavior still requires
 manual validation because this client game-test API is unavailable there.
 The 26.3, 1.21.5 and 1.21.11 suites also pass with vanilla rendering.
+
+## Minecraft 26.1–26.2 ports (2026-11-16)
+
+Each of these targets passes 48 unit tests and the complete graphical world suite
+with vanilla and with the exact Sodium/Mod Menu versions below. Tests cover geometry
+retention across 2/8/2/4, actual block rebuilds, genuine renderer reloads, entity
+visibility, Mod Menu edits and walking/block breaking during resource reloads.
+
+| Branch | Fabric API | Sodium | Mod Menu |
+| --- | --- | --- | --- |
+| 26.1 | 0.145.1+26.1 | 0.8.9+mc26.1.1 | 18.0.2 |
+| 26.1.1 | 0.145.4+26.1.1 | 0.8.9+mc26.1.1 | 18.0.2 |
+| 26.1.2 | 0.155.3+26.1.2 | 0.9.2+mc26.1.2 | 18.0.2 |
+| 26.2 | 0.161.0+26.2 | 0.9.2+mc26.2 | 20.0.3 |
+
+26.1.x uses the older vanilla `LevelRenderer.cullTerrain` cache adapter and
+Minecraft input accessors. With Sodium, that vanilla adapter is skipped because
+Sodium replaces the method; Sodium's own section manager receives distance updates.
+26.1/26.1.1 use Sodium's section map; 26.1.2/26.2 use its newer section storage and
+uniform-buffer reservation. 26.2 uses the split `LevelExtractor` renderer API.
+All four builds use Java 25, unobfuscated official names and client-only dependencies.
+Long-flight memory, shaders and visual behavior with arbitrary resource packs still
+require the manual checks documented in each README.

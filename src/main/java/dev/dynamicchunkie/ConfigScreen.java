@@ -57,6 +57,35 @@ public final class ConfigScreen extends Screen {
                 integer("entityCullingBudget", draft.entityCullingBudget, v -> draft.entityCullingBudget = v);
                 integer("entityCullingDistance", draft.entityCullingDistance, v -> draft.entityCullingDistance = v);
             }
+            case 5 -> {
+                toggle("enablePrediction", () -> draft.enablePrediction, v -> draft.enablePrediction=v);
+                toggle("enableDirectionalVisibility", () -> draft.enableDirectionalVisibility, v -> draft.enableDirectionalVisibility=v);
+                integer("predictionLookaheadMs", draft.predictionLookaheadMs, v -> draft.predictionLookaheadMs=v);
+            }
+            case 6 -> {
+                toggle("enableAdaptiveAnalysis", () -> draft.enableAdaptiveAnalysis, v -> draft.enableAdaptiveAnalysis=v);
+                integer("stationaryIntervalMs", draft.stationaryIntervalMs, v -> draft.stationaryIntervalMs=v);
+                integer("walkingIntervalMs", draft.walkingIntervalMs, v -> draft.walkingIntervalMs=v);
+                integer("elytraIntervalMs", draft.elytraIntervalMs, v -> draft.elytraIntervalMs=v);
+                integer("analysisCacheTtlMs", draft.analysisCacheTtlMs, v -> draft.analysisCacheTtlMs=v);
+            }
+            case 7 -> {
+                toggle("enableFpsAdaptive", () -> draft.enableFpsAdaptive, v -> draft.enableFpsAdaptive=v);
+                toggle("enableHardwareAdaptive", () -> draft.enableHardwareAdaptive, v -> draft.enableHardwareAdaptive=v);
+                integer("targetFps", draft.targetFps, v -> draft.targetFps=v);
+                toggle("enableMemoryManagement", () -> draft.enableMemoryManagement, v -> draft.enableMemoryManagement=v);
+                integer("cacheMemoryLimitMb", draft.cacheMemoryLimitMb, v -> draft.cacheMemoryLimitMb=v);
+                integer("analysisCacheEntries", draft.analysisCacheEntries, v -> draft.analysisCacheEntries=v);
+            }
+            case 8 -> {
+                toggle("enableTeleportRecovery", () -> draft.enableTeleportRecovery, v -> draft.enableTeleportRecovery=v);
+                integer("teleportThresholdBlocks", draft.teleportThresholdBlocks, v -> draft.teleportThresholdBlocks=v);
+                integer("combatGraceMs", draft.combatGraceMs, v -> draft.combatGraceMs=v);
+            }
+            case 9 -> {
+                toggle("simpleLoadingScreens", () -> draft.simpleLoadingScreens, v -> draft.simpleLoadingScreens=v);
+                toggle("loadingInputPassthrough", () -> draft.loadingInputPassthrough, v -> draft.loadingInputPassthrough=v);
+            }
             case 3 -> {
                 integer("analysisIntervalMs", draft.analysisIntervalMs, v -> draft.analysisIntervalMs = v);
                 integer("transitionIntervalMs", draft.transitionIntervalMs, v -> draft.transitionIntervalMs = v);
@@ -78,7 +107,7 @@ public final class ConfigScreen extends Screen {
     }
     private void changePage(int delta) {
         if (!invalid.isEmpty()) { error = text("invalid"); return; }
-        page = Math.floorMod(page + delta, 5);
+        page = Math.floorMod(page + delta, 10);
         error = null;
         rebuildWidgets();
     }

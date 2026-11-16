@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 public final class CompatibilityMixinPlugin implements IMixinConfigPlugin {
     public static boolean supportedSodium() {
         return FabricLoader.getInstance().getModContainer("sodium")
-                .map(mod -> mod.getMetadata().getVersion().getFriendlyString().equals("0.9.3-beta.1+mc26.3"))
+                .map(mod -> mod.getMetadata().getVersion().getFriendlyString().equals("0.9.2+mc26.2"))
                 .orElse(false);
     }
     @Override public boolean shouldApplyMixin(String target, String mixin) {

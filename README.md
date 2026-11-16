@@ -88,3 +88,5 @@ No custom renderer, terrain Section Culling, live external-file reload or univer
 compatibility is provided.
 
 Copyright (C) 2026 AdmerPRO. See [LICENSE](LICENSE).
+
+See [adaptive controls and transparent loading](docs/adaptive-controls.md).

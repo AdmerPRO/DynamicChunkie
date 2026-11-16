@@ -41,4 +41,4 @@ pass real-world regressions for geometry retention, block updates, entity visibi
 movement/block breaking during an unfinished reload, and native completion callbacks.
 1.21.1–1.21.4 pass startup checks; their in-world loading/input behavior still requires
 manual validation because this client game-test API is unavailable there.
-The 26.3 suite also passes with vanilla rendering.
+The 26.3, 1.21.5 and 1.21.11 suites also pass with vanilla rendering.

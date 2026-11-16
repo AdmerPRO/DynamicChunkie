@@ -260,7 +260,7 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
   Glass uses collision geometry; foliage, water, roofs, and overhangs can influence classification.
 - Unknown chunks are conservatively blocked. Chunk arrival can temporarily lower targets,
   especially directly after joining or teleporting.
-- Profile values are heuristics, not measured visibility guarantees. There is no FPS feedback,
+- Profile values are heuristics, not measured visibility guarantees. There are no
   custom predictive chunk requests, Section Culling, terrain Occlusion Culling, or custom rendering.
 - Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
   Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.

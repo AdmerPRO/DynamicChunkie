@@ -27,3 +27,18 @@ default 16-chunk high-altitude profile.
 Build/unit tests pass on all targets. World regressions cover 26.3, 1.21.11,
 1.21.10, 1.21.9, 1.21.8, 1.21.7, 1.21.6 and 1.21.5. Older releases use startup checks with Sodium because the
 client game-test API used here is unavailable. See each branch's README for commands.
+
+## Adaptive/loading update (2026-11-16)
+
+Every target includes chunk-grid DDA, directional/predictive visibility, adaptive
+analysis with bounded caching, frame-time/CPU/optional GPU budgets, soft cache
+reservation accounting, teleport/combat recovery and translucent loading bars.
+Normal growth defaults to +2 chunks/s; teleport recovery is +1 chunk/s from the
+configured minimum. See [policy details and limitations](docs/adaptive-controls.md).
+
+48 unit tests pass per target. With Sodium/Mod Menu, 26.3 and 1.21.5–1.21.11
+pass real-world regressions for geometry retention, block updates, entity visibility,
+movement/block breaking during an unfinished reload, and native completion callbacks.
+1.21.1–1.21.4 pass startup checks; their in-world loading/input behavior still requires
+manual validation because this client game-test API is unavailable there.
+The 26.3 suite also passes with vanilla rendering.

@@ -38,7 +38,7 @@ public final class DistanceTransitions {
         long interval=(recovering?1000L:normalIntervalMs)*1_000_000;
         if (now-lastChange<interval) return current;
         // No accumulated burst after a paused/slow frame.
-        int step=recovering?1:Math.max(1,(int)Math.floor(2*normalIntervalMs/1000.0));
+        int step=recovering?1:Math.min(2,Math.max(1,(int)Math.floor(2*normalIntervalMs/1000.0)));
         int result=Math.min(target,current+step);
         lastChange=now;
         if (result==target) recovering=false;

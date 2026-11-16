@@ -6,6 +6,10 @@ License: **GPL-3.0-only**. No Simulation Distance/server simulation changes.
 | Branch | Minecraft | Java |
 | --- | --- | --- |
 | master | 26.3 | 25 |
+| 26.2 | 26.2 | 25 |
+| 26.1.2 | 26.1.2 | 25 |
+| 26.1.1 | 26.1.1 | 25 |
+| 26.1 | 26.1 | 25 |
 | 1.21.1 | 1.21.1 | 21 |
 | 1.21.2 | 1.21.2 | 21 |
 | 1.21.3 | 1.21.3 | 21 |

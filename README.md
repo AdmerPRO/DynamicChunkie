@@ -321,3 +321,7 @@ See [PORTS.md](PORTS.md) for maintained Minecraft branches and validation covera
 
 See [adaptive policies](docs/adaptive-controls.md) for prediction, frame-time budgets,
 memory accounting, teleport/combat rules, transparent loading and manual validation.
+
+Separate branches and artifacts are available for **26.2, 26.1.2, 26.1.1 and 26.1**
+(Java 25), alongside the existing 1.21.x ports. Use the JAR for your exact Minecraft
+version; dependency selections and validation are listed in [PORTS.md](PORTS.md).

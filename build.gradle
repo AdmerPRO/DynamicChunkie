@@ -4,20 +4,20 @@ plugins {
 }
 version = '0.1.0'
 group = 'dev.dynamicchunkie'
-base { archivesName = 'dynamicchunkie' }
+base { archivesName = 'dynamicchunkie-mc26.1' }
 repositories {
     mavenCentral()
     maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
 }
 dependencies {
-    minecraft 'com.mojang:minecraft:26.3'
+    minecraft 'com.mojang:minecraft:26.1'
     implementation 'net.fabricmc:fabric-loader:0.20.1'
-    implementation 'net.fabricmc.fabric-api:fabric-api:0.166.2+26.3'
-    compileOnly 'maven.modrinth:sodium:mc26.3-0.9.3-beta.1-fabric'
-    compileOnly 'maven.modrinth:modmenu:21.0.1'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.145.1+26.1'
+    compileOnly 'maven.modrinth:sodium:mc26.1.1-0.8.9-fabric'
+    compileOnly 'maven.modrinth:modmenu:18.0.2'
     if (providers.gradleProperty('withSodium').isPresent()) {
-        runtimeOnly 'maven.modrinth:sodium:mc26.3-0.9.3-beta.1-fabric'
-        runtimeOnly 'maven.modrinth:modmenu:21.0.1'
+        runtimeOnly 'maven.modrinth:sodium:mc26.1.1-0.8.9-fabric'
+        runtimeOnly 'maven.modrinth:modmenu:18.0.2'
     }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

@@ -11,6 +11,8 @@ public final class DynamicChunkieConfig {
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
     public boolean enabled = true, enableAltitudeFactor = true, enableSkyDetection = true,
             enableElytraOptimization = true, debugMode = false, preserveRenderCache = true;
+    public boolean enableEntityCulling = true;
+    public int entityCullingBudget = 16, entityCullingDistance = 64;
     public int minRenderDistance = 2, maxRenderDistance = 32, defaultRenderDistance = -1;
     public int tunnelDistance = 2, smallCaveDistance = 4, largeCaveDistance = 10,
             undergroundOpenDistance = 12, surfaceDistance = 16, mountainDistance = 16, highAltitudeDistance = 16;
@@ -32,6 +34,8 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        entityCullingBudget = clamp(entityCullingBudget, 1, 64);
+        entityCullingDistance = clamp(entityCullingDistance, 8, 96);
         minRenderDistance = clamp(minRenderDistance, 2, 32);
         maxRenderDistance = clamp(maxRenderDistance, minRenderDistance, 32);
         analysisIntervalMs = clamp(analysisIntervalMs, 250, 10000);
@@ -51,6 +55,9 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        enableEntityCulling = other.enableEntityCulling;
+        entityCullingBudget = other.entityCullingBudget;
+        entityCullingDistance = other.entityCullingDistance;
         enabled = other.enabled;
         enableAltitudeFactor = other.enableAltitudeFactor;
         enableSkyDetection = other.enableSkyDetection;

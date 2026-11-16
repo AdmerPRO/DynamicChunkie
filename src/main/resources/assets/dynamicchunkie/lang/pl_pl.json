@@ -29,5 +29,9 @@
   "dynamicchunkie.config.transitionIntervalMs": "Zmiana dystansu (ms)",
   "dynamicchunkie.config.smoothingFactor": "Wygładzanie wyniku",
   "dynamicchunkie.config.deadZoneChunks": "Martwa strefa (chunki)",
-  "dynamicchunkie.config.targetStabilityMs": "Stabilność celu (ms)"
+  "dynamicchunkie.config.targetStabilityMs": "Stabilność celu (ms)",
+  "dynamicchunkie.config.page.4": "Entity culling",
+  "dynamicchunkie.config.enableEntityCulling": "Ogranicz renderowanie encji",
+  "dynamicchunkie.config.entityCullingBudget": "Encje sprawdzane na tick",
+  "dynamicchunkie.config.entityCullingDistance": "Zasięg sprawdzania (bloki)"
 }

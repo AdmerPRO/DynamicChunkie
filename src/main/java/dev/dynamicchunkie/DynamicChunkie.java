@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 public final class DynamicChunkie implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("DynamicChunkie");
     private static DynamicDistanceManager manager;
+    private static dev.dynamicchunkie.culling.EntityCulling culling;
+    public static dev.dynamicchunkie.culling.EntityCulling entityCulling() { return culling; }
     public static DynamicChunkieConfig config() { return manager.config; }
     public static boolean applyConfig(DynamicChunkieConfig value) {
         return manager.applyConfig(net.minecraft.client.Minecraft.getInstance(), value);
@@ -21,9 +23,12 @@ public final class DynamicChunkie implements ClientModInitializer {
         var config = DynamicChunkieConfig.load();
         RenderCache.configure(config);
         manager = new DynamicDistanceManager(config);
+        culling = new dev.dynamicchunkie.culling.EntityCulling(config);
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(culling::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> manager.restore(client));
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> LOG.info("DynamicChunkie client initialized"));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); });
         DebugOverlay.register(manager);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->
             dispatcher.register(literal("dynamicchunkie")

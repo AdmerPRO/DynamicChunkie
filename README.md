@@ -297,3 +297,23 @@ Copyright (C) 2026 AdmerPRO. Licensed under **GNU General Public License version
 (`GPL-3.0-only`); see [LICENSE](LICENSE). The complete license is included in the binary
 and sources JARs. Sodium and Mod Menu remain separately distributed projects with their
 own licenses.
+
+## Entity culling
+
+Client-side entity occlusion can be configured in Mod Menu's **Entity culling** page.
+It checks at most 16 entities per client tick within 64 blocks (both configurable).
+A center ray and eight rays to an expanded bounding box must all encounter loaded,
+opaque full blocks in two samples before rendering is skipped. Glass, partial blocks
+and unloaded cells cannot occlude. The render hook only reads the bounded-age cache;
+world reads happen on client ticks. Camera/entity motion invalidates stale decisions.
+
+Players, glowing/named entities, mounted entities, near objects (8 blocks), large or
+unusual geometry remain visible. This initial implementation targets living entities
+and dropped items, not block entities or terrain sections. It does not affect simulation,
+AI, ticking or networking. An installed EntityCulling mod disables our entity culler.
+Sampling is conservative but approximate: small apertures between sample rays can be
+missed. Turn the feature off in Mod Menu if a modded model's bounds are inaccurate.
+
+Unit tests cover voxel traversal, missing data, negative coordinates and hard work limits.
+The client regression places a pig behind stone/glass and checks glowing/player/disable
+exemptions. Long-session visual correctness with other entity/model mods remains manual.

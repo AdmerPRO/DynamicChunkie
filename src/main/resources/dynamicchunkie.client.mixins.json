@@ -3,6 +3,15 @@
   "package": "dev.dynamicchunkie.mixin",
   "plugin": "dev.dynamicchunkie.mixin.CompatibilityMixinPlugin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["ViewAreaMixin", "LevelRendererMixin", "sodium.SodiumWorldRendererMixin", "sodium.RenderSectionManagerMixin", "sodium.SodiumRendererAccessor"],
-  "injectors": { "defaultRequire": 1 }
+  "client": [
+    "ViewAreaMixin",
+    "LevelRendererMixin",
+    "sodium.SodiumWorldRendererMixin",
+    "sodium.RenderSectionManagerMixin",
+    "sodium.SodiumRendererAccessor",
+    "EntityRenderDispatcherMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

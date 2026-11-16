@@ -52,6 +52,11 @@ public final class ConfigScreen extends Screen {
                 integer("mountainDistance", draft.mountainDistance, v -> draft.mountainDistance = v);
                 integer("highAltitudeDistance", draft.highAltitudeDistance, v -> draft.highAltitudeDistance = v);
             }
+            case 4 -> {
+                toggle("enableEntityCulling", () -> draft.enableEntityCulling, v -> draft.enableEntityCulling = v);
+                integer("entityCullingBudget", draft.entityCullingBudget, v -> draft.entityCullingBudget = v);
+                integer("entityCullingDistance", draft.entityCullingDistance, v -> draft.entityCullingDistance = v);
+            }
             case 3 -> {
                 integer("analysisIntervalMs", draft.analysisIntervalMs, v -> draft.analysisIntervalMs = v);
                 integer("transitionIntervalMs", draft.transitionIntervalMs, v -> draft.transitionIntervalMs = v);
@@ -73,7 +78,7 @@ public final class ConfigScreen extends Screen {
     }
     private void changePage(int delta) {
         if (!invalid.isEmpty()) { error = text("invalid"); return; }
-        page = Math.floorMod(page + delta, 4);
+        page = Math.floorMod(page + delta, 5);
         error = null;
         rebuildWidgets();
     }

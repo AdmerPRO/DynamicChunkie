@@ -2,7 +2,7 @@
 
 DynamicChunkie is a client-side Fabric mod that adjusts Minecraft's Render Distance to the space around you. Narrow tunnels can use a short distance, while open caves and landscapes can use more. It also includes entity occlusion culling and keeps nearby rendered geometry when the distance changes.
 
-**Current release: v0.1.0 — first release**  
+**Current release: v0.1.0 - first release**  
 **Author:** AdmerPRO · **License:** GNU GPL v3.0 (GPL-3.0-only) · **Client-side only**
 
 ## Supported Minecraft versions
@@ -11,8 +11,6 @@ Use the file built for your exact Minecraft version. The branches and artifacts 
 
 - Minecraft **26.3**, **26.2**, **26.1.2**, **26.1.1**, **26.1**
 - Minecraft **1.21.1–1.21.11**, with a separate target for each patch version
-
-Each target has version-matched Fabric API dependencies. Sodium and Mod Menu are optional; supported versions are listed in [PORTS.md](PORTS.md). Do not mix a JAR or optional mod build made for another Minecraft version.
 
 ## What it does
 
@@ -35,7 +33,6 @@ The normal renderer and chunk-loading system remain in use. The mod does **not**
 1. Install Fabric Loader for your Minecraft version.
 2. Add the matching Fabric API build to the instance's `mods` folder.
 3. Add the DynamicChunkie JAR for that exact Minecraft version.
-4. Optionally install a compatible Sodium build for geometry reuse and Mod Menu for in-game settings. Check the version table in [PORTS.md](PORTS.md).
 
 ## Settings and commands
 
@@ -58,19 +55,4 @@ Render Distance is changed through Minecraft's validated client option and its n
 
 The analysis cache and its memory accounting are bounded. The memory budget is a soft reservation estimate for section slots plus a separate limit for analysis results; it is **not** a hard cap on Minecraft/Sodium process memory or GPU VRAM. The game renderer owns geometry allocation and release. GPU utilization is used only when the game's timing data is available.
 
-Environment samples cannot know every distant horizon or cave opening. Unloaded chunks count as blocked. Resource pack reloads and compiling newly visible chunks can still cause frame-time spikes. The supported Sodium builds and test coverage are recorded in [PORTS.md](PORTS.md); other renderer replacements and shader combinations may behave differently.
-
-## Build
-
-Use JDK 25 for Minecraft 26.x targets and JDK 21 for 1.21.x targets. From the matching version branch, run:
-
-```sh
-./gradlew build
-```
-
-On Windows use `gradlew.bat build`.
-
-
-## Release notes
-
-See [CHANGELOG.md](CHANGELOG.md) for the v0.1.0 first release notes.
+Environment samples cannot know every distant horizon or cave opening. Unloaded chunks count as blocked. Resource pack reloads and compiling newly visible chunks can still cause frame-time spikes. 

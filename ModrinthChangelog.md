@@ -23,4 +23,4 @@ The first release of DynamicChunkie introduces the client-side dynamic Render Di
 
 ### Supported Minecraft versions
 
-26.3, 26.2, 26.1.2, 26.1.1, 26.1, and 1.21.1 through 1.21.11. Use the build for the exact Minecraft version. Compatible optional Sodium and Mod Menu versions are listed in `PORTS.md`.
+26.3, 26.2, 26.1.2, 26.1.1, 26.1, and 1.21.1 through 1.21.11. Use the build for the exact Minecraft version.

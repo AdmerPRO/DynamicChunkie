@@ -22,7 +22,7 @@ public final class TransparentLoadingGameTest implements FabricClientGameTest {
             world.getServer().runCommand("tp @a 0.5 100 0.5 -90 0");
             world.getConnection().waitForChunksRender();
             context.runOnClient(client -> {
-                var settings=backup.copy();settings.simpleLoadingScreens=true;settings.loadingInputPassthrough=true;
+                var settings=backup.copy();settings.enabled=true;settings.simpleLoadingScreens=true;settings.loadingInputPassthrough=true;
                 DynamicChunkie.applyConfig(settings);
                 client.gui.setScreen(null);
                 client.gui.setOverlay(new LoadingOverlay(client,new ReloadInstance() {
@@ -47,6 +47,12 @@ public final class TransparentLoadingGameTest implements FabricClientGameTest {
             context.waitFor(client -> client.hitResult instanceof BlockHitResult hit && hit.getBlockPos().equals(block),200);
             context.getInput().holdKeyFor(options -> options.keyAttack,5);
             context.waitFor(client -> client.level.getBlockState(block).isAir(),200);
+            context.runOnClient(client -> {
+                var enabled=DynamicChunkie.config().copy();var disabled=enabled.copy();disabled.enabled=false;
+                DynamicChunkie.applyConfig(disabled);
+                require(!LoadingPresentation.simple() && !LoadingPresentation.readyForInput(),"Disabled mod still changes loading policy");
+                DynamicChunkie.applyConfig(enabled);
+            });
             completion.complete(null);
             context.waitFor(client -> client.gui.overlay()==null && callbacks.get()==1,200);
             DynamicChunkie.LOG.info("Transparent reload regression passed: movement, block breaking and native completion callback");

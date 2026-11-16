@@ -38,5 +38,6 @@ class DistanceTransitionsTest {
     @Test void pausesDoNotAccumulateAnIncreaseBurst() {
         var t=new DistanceTransitions();t.pause(1_000_000_000L);
         assertEquals(4,t.next(2,32,100_000_000_000L,1000));
+        assertEquals(6,t.next(4,32,200_000_000_000L,10000));
     }
 }

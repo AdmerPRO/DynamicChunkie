@@ -20,7 +20,7 @@ public final class TransparentLoadingGameTest implements FabricClientGameTest {
             world.getServer().runCommand("gamemode creative @a");
             world.getServer().runCommand("fill -8 99 -8 8 99 8 minecraft:stone");
             world.getServer().runCommand("tp @a 0.5 100 0.5 -90 0");
-            world.getConnection().waitForChunksRender();
+            world.getClientWorld().waitForChunksRender();
             context.runOnClient(client -> {
                 var settings=backup.copy();settings.simpleLoadingScreens=true;settings.loadingInputPassthrough=true;
                 DynamicChunkie.applyConfig(settings);

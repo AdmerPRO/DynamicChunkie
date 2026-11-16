@@ -39,7 +39,7 @@ public final class RenderCache {
         if (!enabled()) return actual;
         int height=24;
         var level=net.minecraft.client.Minecraft.getInstance().level;
-        if (level!=null) height=level.getMaxSectionY()-level.getMinSectionY()+1;
+        if (level!=null) height=level.getSectionsCount();
         return config.enableMemoryManagement ?
                 dev.dynamicchunkie.adaptive.MemoryBudget.reservationRadius(actual,config.maxRenderDistance,height,config.cacheMemoryLimitMb) :
                 Math.max(actual,config.maxRenderDistance);

@@ -1,15 +1,12 @@
 package dev.dynamicchunkie;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.minecraft.resources.Identifier;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
 import java.util.Locale;
 
 public final class DebugOverlay {
     public static void register(DynamicDistanceManager manager) {
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-                Identifier.fromNamespaceAndPath("dynamicchunkie", "debug"), (context, tickCounter) -> {
+        HudRenderCallback.EVENT.register( (context, tickCounter) -> {
             Minecraft client = Minecraft.getInstance();
             if (!manager.config.debugMode || client.options.hideGui || client.player == null) return;
             EnvironmentScore s = manager.score();

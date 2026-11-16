@@ -3,7 +3,7 @@ package dev.dynamicchunkie;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.chunk.CompiledSectionMesh;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher.CompiledSection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
@@ -24,11 +24,11 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
             BlockPos position = context.computeOnClient(client -> client.player.blockPosition().below());
             context.waitFor(client -> {
                 var section = section(area(client), position);
-                return section != null && section.getSectionMesh() instanceof CompiledSectionMesh;
+                return section != null && section.getCompiled() != CompiledSection.UNCOMPILED;
             }, 1200);
             var original = context.computeOnClient(client -> area(client));
             var section = context.computeOnClient(client -> section(original, position));
-            var mesh = context.computeOnClient(client -> section.getSectionMesh());
+            var mesh = context.computeOnClient(client -> section.getCompiled());
             int simulation = context.computeOnClient(client -> client.options.simulationDistance().get());
             long reused = context.computeOnClient(client -> RenderCache.preservedChanges());
 
@@ -39,7 +39,7 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
                 context.runOnClient(client -> {
                     require(area(client) == original, "ViewArea was recreated");
                     require(section(original, position) == section, "Near section was recreated");
-                    require(section.getSectionMesh() == mesh, "Near geometry was rebuilt");
+                    require(section.getCompiled() == mesh, "Near geometry was rebuilt");
                     require(client.options.simulationDistance().get() == simulation, "Simulation Distance changed");
                 });
             }
@@ -48,8 +48,8 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
             });
             world.getServer().runOnServer(server -> server.overworld()
                     .setBlockAndUpdate(position, Blocks.GOLD_BLOCK.defaultBlockState()));
-            context.waitFor(client -> section.getSectionMesh() != mesh &&
-                    section.getSectionMesh() instanceof CompiledSectionMesh, 400);
+            context.waitFor(client -> section.getCompiled() != mesh &&
+                    section.getCompiled() != CompiledSection.UNCOMPILED, 400);
             context.runOnClient(client -> {
                 // Genuine resource/graphics reloads must still invalidate the cache.
                 client.levelRenderer.allChanged();

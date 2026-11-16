@@ -52,7 +52,7 @@ public final class EntityCulling {
             states.keySet().removeIf(entity -> !scheduled.contains(entity));
             snapshotAt = now;
         }
-        Vec3 camera = client.gameRenderer.mainCamera().position();
+        Vec3 camera = client.gameRenderer.getMainCamera().position();
         int budget=config.entityCullingBudget;
         if (config.enableHardwareAdaptive && dev.dynamicchunkie.DynamicChunkie.distanceManager().performance().cpuPressure())
             budget=Math.max(1,budget/2);

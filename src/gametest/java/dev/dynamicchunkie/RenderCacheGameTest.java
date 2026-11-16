@@ -20,28 +20,28 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
         }
         context.runOnClient(client -> new RenderDistanceController(client).apply(4));
         try (var world = context.worldBuilder().create()) {
-            context.runOnClient(client -> client.gui.setScreen(new Screen(Component.literal("Render cache test")) {
+            context.runOnClient(client -> client.setScreen(new Screen(Component.literal("Render cache test")) {
                 @Override public boolean isPauseScreen() { return false; }
             }));
-            world.getConnection().waitForChunksRender();
+            world.getClientLevel().waitForChunksRender();
             BlockPos position = context.computeOnClient(client -> client.player.blockPosition().below());
             context.waitFor(client -> {
-                var section = client.levelRenderer.viewArea().getRenderSectionAt(position);
+                var section = section(area(client), position);
                 return section != null && section.getSectionMesh() instanceof CompiledSectionMesh;
             }, 1200);
-            var original = context.computeOnClient(client -> client.levelRenderer.viewArea());
-            var section = context.computeOnClient(client -> original.getRenderSectionAt(position));
+            var original = context.computeOnClient(client -> area(client));
+            var section = context.computeOnClient(client -> section(original, position));
             var mesh = context.computeOnClient(client -> section.getSectionMesh());
             int simulation = context.computeOnClient(client -> client.options.simulationDistance().get());
             long reused = context.computeOnClient(client -> RenderCache.preservedChanges());
 
             for (int radius : new int[]{2, 8, 2, 4}) {
                 context.runOnClient(client -> new RenderDistanceController(client).apply(radius));
-                context.waitFor(client -> client.levelRenderer.viewArea().getViewDistance() == radius, 200);
+                context.waitFor(client -> area(client).getViewDistance() == radius, 200);
                 context.waitTicks(5);
                 context.runOnClient(client -> {
-                    require(client.levelRenderer.viewArea() == original, "ViewArea was recreated");
-                    require(original.getRenderSectionAt(position) == section, "Near section was recreated");
+                    require(area(client) == original, "ViewArea was recreated");
+                    require(section(original, position) == section, "Near section was recreated");
                     require(section.getSectionMesh() == mesh, "Near geometry was rebuilt");
                     require(client.options.simulationDistance().get() == simulation, "Simulation Distance changed");
                 });
@@ -49,21 +49,28 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
             context.runOnClient(client -> {
                 require(RenderCache.preservedChanges() >= reused + 4, "Cache path did not handle every transition");
             });
-            world.getServer().runOnServer(server -> world.getConnection().getServerLevel()
+            world.getServer().runOnServer(server -> server.overworld()
                     .setBlockAndUpdate(position, Blocks.GOLD_BLOCK.defaultBlockState()));
             context.waitFor(client -> section.getSectionMesh() != mesh &&
                     section.getSectionMesh() instanceof CompiledSectionMesh, 400);
             context.runOnClient(client -> {
                 // Genuine resource/graphics reloads must still invalidate the cache.
-                client.levelExtractor.allChanged();
+                client.levelRenderer.allChanged();
             });
-            context.waitFor(client -> client.levelRenderer.viewArea() != original, 200);
+            context.waitFor(client -> area(client) != original, 200);
             context.runOnClient(client -> {
-                client.gui.setScreen(null);
+                client.setScreen(null);
                 DynamicChunkie.LOG.info("Render cache regression passed: 2/8/2/4 preserved near meshes; block updates and full reload still work; simulation unchanged");
             });
         }
         } finally { context.runOnClient(client -> DynamicChunkie.applyConfig(backupSettings)); }
+    }
+    private static net.minecraft.client.renderer.ViewArea area(net.minecraft.client.Minecraft client) {
+        return (net.minecraft.client.renderer.ViewArea)((RenderStorageAccess)client.levelRenderer).dynamicchunkie$viewArea();
+    }
+    private static net.minecraft.client.renderer.chunk.SectionRenderDispatcher.RenderSection section(
+            net.minecraft.client.renderer.ViewArea area, BlockPos position) {
+        return (net.minecraft.client.renderer.chunk.SectionRenderDispatcher.RenderSection)((CachedViewArea)area).dynamicchunkie$sectionAt(position);
     }
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);

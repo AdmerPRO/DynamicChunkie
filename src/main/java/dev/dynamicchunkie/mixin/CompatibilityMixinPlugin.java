@@ -14,6 +14,8 @@ public final class CompatibilityMixinPlugin implements IMixinConfigPlugin {
                 .orElse(false);
     }
     @Override public boolean shouldApplyMixin(String target, String mixin) {
+        // Sodium replaces cullTerrain entirely on 26.1.x; its own cache adapter owns RD.
+        if (mixin.endsWith(".LevelRendererMixin") && FabricLoader.getInstance().isModLoaded("sodium")) return false;
         return !mixin.contains(".sodium.") || supportedSodium();
     }
     @Override public void onLoad(String pkg) {}

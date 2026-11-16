@@ -2,33 +2,44 @@ package dev.dynamicchunkie.mixin;
 
 import dev.dynamicchunkie.CachedViewArea;
 import dev.dynamicchunkie.RenderCache;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Options;
-import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ViewArea;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import net.minecraft.client.renderer.SectionOcclusionGraph;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
-abstract class LevelRendererMixin {
+abstract class LevelRendererMixin implements dev.dynamicchunkie.RenderStorageAccess {
+    @Override public Object dynamicchunkie$viewArea() { return viewArea; }
+    @Shadow @Final private Minecraft minecraft;
     @Shadow private ViewArea viewArea;
+    @Shadow private int lastViewDistance;
+    @Shadow @Final private SectionOcclusionGraph sectionOcclusionGraph;
+    @Shadow public abstract void allChanged();
 
-    @ModifyArg(method = "invalidateCompiledGeometry", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/ViewArea;<init>(Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher;IIIIILnet/minecraft/client/renderer/SectionOcclusionGraph;)V"), index = 5)
-    private int dynamicchunkie$reserveCapacity(int actual) {
-        return RenderCache.allocationRadius(actual);
+    @ModifyArg(method = "allChanged", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/ViewArea;<init>(Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher;Lnet/minecraft/world/level/Level;ILnet/minecraft/client/renderer/LevelRenderer;)V"), index = 2)
+    private int dynamicchunkie$reserve(int actual) { return RenderCache.allocationRadius(actual); }
+
+    @Inject(method = "allChanged", at = @At("RETURN"))
+    private void dynamicchunkie$radius(CallbackInfo ci) {
+        if ((Object)viewArea instanceof CachedViewArea cached && cached.dynamicchunkie$isManaged())
+            cached.dynamicchunkie$setVisibleRadius(minecraft.options.getEffectiveRenderDistance());
     }
 
-    @Inject(method = "invalidateCompiledGeometry", at = @At("RETURN"))
-    private void dynamicchunkie$setInitialRadius(ClientLevel level, Options options, Camera camera,
-            BlockColors colors, CallbackInfo ci) {
-        if ((Object)viewArea instanceof CachedViewArea cached && cached.dynamicchunkie$isManaged())
-            cached.dynamicchunkie$setVisibleRadius(options.getEffectiveRenderDistance());
+    @Redirect(method = "cullTerrain", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/LevelRenderer;allChanged()V"))
+    private void dynamicchunkie$reuse(LevelRenderer renderer) {
+        int radius = minecraft.options.getEffectiveRenderDistance();
+        if (RenderCache.sodiumEnabled()) { lastViewDistance = radius; return; }
+        if (RenderCache.enabled() && (Object)viewArea instanceof CachedViewArea cached &&
+                cached.dynamicchunkie$isManaged() && radius <= cached.dynamicchunkie$capacity()) {
+            cached.dynamicchunkie$setVisibleRadius(radius);
+            lastViewDistance = radius;
+            sectionOcclusionGraph.invalidate();
+            RenderCache.recordReuse();
+        } else allChanged();
     }
 }

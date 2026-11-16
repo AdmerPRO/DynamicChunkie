@@ -38,7 +38,7 @@ public final class DynamicDistanceManager {
             config.save();
             lastApplied = controller.current();
         }
-        if (client.gui.screen() != null || client.isPaused()) {
+        if (client.screen != null || client.isPaused()) {
             lastTransition = System.nanoTime();
             return;
         }

@@ -39,11 +39,11 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
 
-      - name: Set up Java 25
+      - name: Set up Java 21
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '21'
           cache: gradle
           cache-dependency-path: |
             **/*.gradle
@@ -54,12 +54,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y xvfb xauth libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools libasound2t64 libxi6 libxrandr2 libxcursor1 libxinerama1 libflite1
-
-      - name: Select Mesa software Vulkan driver
-        run: |
-          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name 'lvp_icd*.json' -print -quit)"
-          test -n "$icd"
-          echo "VK_DRIVER_FILES=$icd" >> "$GITHUB_ENV"
 
       - name: Run client integration tests
         env:

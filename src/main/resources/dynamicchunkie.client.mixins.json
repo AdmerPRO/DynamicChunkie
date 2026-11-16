@@ -2,7 +2,7 @@
   "required": true,
   "package": "dev.dynamicchunkie.mixin",
   "plugin": "dev.dynamicchunkie.mixin.CompatibilityMixinPlugin",
-  "compatibilityLevel": "JAVA_25",
-  "client": ["ViewAreaMixin", "LevelRendererMixin", "LevelExtractorMixin", "sodium.SodiumWorldRendererMixin", "sodium.RenderSectionManagerMixin", "sodium.SodiumRendererAccessor"],
+  "compatibilityLevel": "JAVA_21",
+  "client": ["ViewAreaMixin", "LevelRendererMixin", "sodium.SodiumWorldRendererMixin", "sodium.RenderSectionManagerMixin", "sodium.SodiumRendererAccessor"],
   "injectors": { "defaultRequire": 1 }
 }

@@ -1,18 +1,24 @@
+# Branch target: Minecraft 1.21.11
+
+This branch builds a **Minecraft 1.21.11** artifact. It does not declare compatibility
+with all 1.21.x releases. Mod version stays 0.1.0. Master targets Minecraft 26.3.
+Java 21, Fabric API 0.141.6+1.21.11, Mod Menu 17.0.1 and Sodium 0.8.14+mc1.21.11 are used.
+
 # DynamicChunkie
 
 A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby geometry.
-MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
-0.166.2+26.3. It uses focused client mixins to retain existing render-section storage, with optional
-integration for Sodium 0.9.3-beta.1+mc26.3.
+MVP for **Minecraft 1.21.11**, Java 21, Fabric Loader 0.20.1 or newer, and Fabric API
+0.141.6+1.21.11. It uses focused client mixins to retain existing render-section storage, with optional
+integration for Sodium 0.8.14+mc1.21.11.
 It has no reflection, replacement renderer, new culling algorithm, or server component. Simulation Distance is never read or modified.
 
 ## Install and build
 
-Install Fabric for Minecraft 26.3. Put Fabric API and
-`build/libs/dynamicchunkie-0.1.0.jar` in the instance's `mods` directory.
+Install Fabric for Minecraft 1.21.11. Put Fabric API and
+`build/libs/dynamicchunkie-mc1.21.11-0.1.0.jar` in the instance's `mods` directory.
 Do not install the sources JAR. The mod version stays at **0.1.0** until explicitly changed by the user.
 
-With JDK 25 selected:
+With JDK 21 selected:
 
 ```sh
 ./gradlew build
@@ -28,7 +34,7 @@ Windows: `gradlew.bat build`. Gradle downloads build dependencies on the first r
 
 The mod creates `config/dynamicchunkie.json` at startup. An example is included at
 [config/dynamicchunkie.example.json](config/dynamicchunkie.example.json).
-For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.3.
+For an in-game settings screen, optionally install **Mod Menu 17.0.1** for 1.21.11.
 Open **Mods → DynamicChunkie → Configure**. The four pages cover general switches, caves
 and limits, open-terrain profiles, and timing/stability. Save validates and applies settings
 immediately and writes the JSON file. Cancel/Escape discards edits; Defaults resets the
@@ -127,19 +133,19 @@ Sky detection uses the loaded column's existing heightmap. Direction vectors are
 vanilla raycasting still creates small temporary objects. Config writes occur at lifecycle,
 command and manual-setting changes, never on each analysis or transition.
 
-This port uses Minecraft 26.3's unobfuscated official class names, Fabric Loom 1.17.21,
-and Gradle 9.6.0; Yarn mappings and JAR remapping are no longer needed.
+This port uses Minecraft 1.21.11 with official Mojang mappings, Fabric Loom 1.17.21,
+and Gradle 9.6.0; Fabric Loom remaps the release JAR to intermediary names.
 The selected Minecraft JAR's `Options`, `OptionInstance.IntRange`, raycast APIs,
 and GUI extraction APIs were inspected during the port.
-See [Fabric's 26.3 migration notes](https://www.fabricmc.net/2026/09/15/263.html).
-The debug HUD uses Fabric's `HudElementRegistry` and the game's `GuiGraphicsExtractor`.
+See [Fabric's 1.21.11 migration notes](https://www.fabricmc.net/2026/09/15/263.html).
+The debug HUD uses Fabric's `HudElementRegistry` and the game's `GuiGraphics`.
 
 The earlier 1.21.1 implementation remains in Git history. The current artifact targets
-26.3 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
+1.21.11 only; keep an existing `config/dynamicchunkie.json` to preserve settings across the upgrade.
 
 ## Retaining nearby chunks without full rebuilds
 
-In vanilla 26.3, the RD comparison in `LevelExtractor.extract` calls `allChanged`.
+In vanilla 1.21.11, the RD comparison in `LevelExtractor.extract` calls `allChanged`.
 That recreates update tracking and tells `LevelRenderer` to invalidate compiled geometry,
 release all section buffers, and recreate the view area. Merely stepping the slider slowly
 therefore still causes repeated full rebuilds.
@@ -172,8 +178,8 @@ storage handling.
 
 ### Sodium compatibility
 
-**Tested: Sodium 0.9.3-beta.1+mc26.3** (Modrinth version
-`mc26.3-0.9.3-beta.1-fabric`). Sodium is optional and is not bundled or required at runtime.
+**Tested: Sodium 0.8.14+mc1.21.11** (Modrinth version
+`mc1.21.11-0.8.14-fabric`). Sodium is optional and is not bundled or required at runtime.
 
 Earlier builds disabled reuse with Sodium, which allowed its separate RD-triggered
 `SodiumWorldRenderer.reload()` to destroy/recreate its section manager on each step.
@@ -200,8 +206,8 @@ Fourteen unit tests cover relative tunnel/cave/surface scoring, altitude gating,
 profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
 target stability under doorway oscillation, isolated UI drafts and restoration metadata preservation.
 Compilation validates the selected Minecraft and Fabric APIs.
-The Minecraft 26.3 development client was launched successfully with Fabric Loader 0.20.1,
-Fabric API 0.166.2+26.3, and this mod. Startup reached the GUI, the client tick initialized
+The Minecraft 1.21.11 development client was launched successfully with Fabric Loader 0.20.1,
+Fabric API 0.141.6+1.21.11, and this mod. Startup reached the GUI, the client tick initialized
 the mod configuration, and the user confirmed that Minecraft opened. On this machine the
 game fell back from OpenGL to Vulkan; missing narrator libraries and development-account
 Realms authentication produced unrelated warnings. The automated client-world regression also passed: repeated 2/8/2/4 transitions preserved
@@ -241,7 +247,7 @@ The separate test mod creates a disposable world; it is not included in the rele
 It checks section/mesh identity during repeated distance changes, unchanged Simulation
 Distance, correct mesh refresh after block changes, and the continued ability to perform a genuine renderer reload.
 Unit tests also cover target stability and oscillation at cave entrances.
-Run `./gradlew runClientGameTest -PwithSodium` for the Sodium 0.9.3-beta.1 + Mod Menu 21.0.1
+Run `./gradlew runClientGameTest -PwithSodium` for the Sodium 0.8.14 + Mod Menu 17.0.1
 integration suite; `./gradlew runClient -PwithSodium` starts that development setup.
 The property adds these mods to the development runtime only; neither is bundled.
 
@@ -268,7 +274,7 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
 ## GitHub Actions
 
 [Build](.github/workflows/build.yml) runs on pushes, pull requests and manual dispatch.
-It validates the Gradle wrapper and builds/tests with Temurin Java 25 on Linux and Windows.
+It validates the Gradle wrapper and builds/tests with Temurin Java 21 on Linux and Windows.
 Each successful job uploads the mod and sources JARs; unit test reports are uploaded even
 when tests fail. Download them from **Actions → Build → run → Artifacts**. Artifacts are
 retained for 14 days. The workflow does not change the mod version or publish releases.

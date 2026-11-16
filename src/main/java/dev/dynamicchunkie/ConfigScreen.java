@@ -2,7 +2,7 @@ package dev.dynamicchunkie;
 
 import java.util.*;
 import java.util.function.*;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -115,14 +115,14 @@ public final class ConfigScreen extends Screen {
         if (DynamicChunkie.applyConfig(draft)) onClose();
         else error = text("saveFailed");
     }
-    @Override public void onClose() { minecraft.gui.setScreen(parent); }
-    @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        super.extractRenderState(graphics, mouseX, mouseY, delta);
-        graphics.text(font, title, (width - font.width(title)) / 2, 10, 0xFFFFFFFF);
+    @Override public void onClose() { minecraft.setScreen(parent); }
+    @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        super.render(graphics, mouseX, mouseY, delta);
+        graphics.drawString(font, title, (width - font.width(title)) / 2, 10, 0xFFFFFFFF);
         Component pageTitle = text("page." + page);
-        graphics.text(font, pageTitle, (width - font.width(pageTitle)) / 2, 45, 0xFFFFFFFF);
+        graphics.drawString(font, pageTitle, (width - font.width(pageTitle)) / 2, 45, 0xFFFFFFFF);
         for (int i = 0; i < labels.size(); i++)
-            if (labels.get(i) != null) graphics.text(font, text(labels.get(i)), left, 72 + i * 22, 0xFFFFFFFF);
-        if (error != null) graphics.text(font, error, left, height - 39, 0xFFFF5555);
+            if (labels.get(i) != null) graphics.drawString(font, text(labels.get(i)), left, 72 + i * 22, 0xFFFFFFFF);
+        if (error != null) graphics.drawString(font, error, left, height - 39, 0xFFFF5555);
     }
 }

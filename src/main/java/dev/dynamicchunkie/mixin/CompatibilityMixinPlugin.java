@@ -10,10 +10,12 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 public final class CompatibilityMixinPlugin implements IMixinConfigPlugin {
     public static boolean supportedSodium() {
         return FabricLoader.getInstance().getModContainer("sodium")
-                .map(mod -> mod.getMetadata().getVersion().getFriendlyString().equals("0.9.3-beta.1+mc26.3"))
+                .map(mod -> mod.getMetadata().getVersion().getFriendlyString().equals("0.8.14+mc1.21.11"))
                 .orElse(false);
     }
     @Override public boolean shouldApplyMixin(String target, String mixin) {
+        if (!mixin.contains(".sodium.") && (mixin.endsWith("LevelRendererMixin") || mixin.endsWith("ViewAreaMixin"))
+                && FabricLoader.getInstance().isModLoaded("sodium")) return false;
         return !mixin.contains(".sodium.") || supportedSodium();
     }
     @Override public void onLoad(String pkg) {}

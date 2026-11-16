@@ -11,7 +11,7 @@ public final class DebugOverlay {
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("dynamicchunkie", "debug"), (context, tickCounter) -> {
             Minecraft client = Minecraft.getInstance();
-            if (!manager.config.debugMode || client.gui.hud.isHidden() || client.player == null) return;
+            if (!manager.config.debugMode || client.options.hideGui || client.player == null) return;
             EnvironmentScore s = manager.score();
             String[] lines = s == null ? new String[]{"DynamicChunkie: " + (manager.config.enabled ? "Waiting" : "Disabled")} :
                     new String[]{"DynamicChunkie",
@@ -27,7 +27,7 @@ public final class DebugOverlay {
             int y = 8;
             for (String line : lines) {
                 context.fill(5, y - 1, 12 + client.font.width(line), y + 10, 0xA0000000);
-                context.text(client.font, line, 8, y, 0xFFFFFFFF, true);
+                context.drawString(client.font, line, 8, y, 0xFFFFFFFF, true);
                 y += 12;
             }
         });

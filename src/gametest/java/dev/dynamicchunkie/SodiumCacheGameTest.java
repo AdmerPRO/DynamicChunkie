@@ -27,10 +27,10 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
         testMenu(context);
         context.runOnClient(client -> new RenderDistanceController(client).apply(4));
         try (var world = context.worldBuilder().create()) {
-            context.runOnClient(client -> client.gui.setScreen(new Screen(Component.literal("Sodium cache test")) {
+            context.runOnClient(client -> client.setScreen(new Screen(Component.literal("Sodium cache test")) {
                 @Override public boolean isPauseScreen() { return false; }
             }));
-            world.getConnection().waitForChunksRender();
+            world.getClientWorld().waitForChunksRender();
             var ground = context.computeOnClient(client -> client.player.blockPosition().below());
             var position = SectionPos.of(ground);
             context.waitFor(client -> section(position) != null && section(position).isBuilt(), 1200);
@@ -58,14 +58,15 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                     });
                 }
             }
-            world.getServer().runOnServer(server -> world.getConnection().getServerLevel()
-                    .setBlockAndUpdate(ground, Blocks.GOLD_BLOCK.defaultBlockState()));
-            context.waitFor(client -> originalSection.getVisibilityData() != visibility, 400);
-            context.runOnClient(client -> client.levelExtractor.allChanged());
+            long meshBytes = context.computeOnClient(client -> originalSection.getLastMeshResultSize());
+            world.getServer().runOnServer(server -> server.overworld()
+                    .setBlockAndUpdate(ground, Blocks.AIR.defaultBlockState()));
+            context.waitFor(client -> originalSection.getLastMeshResultSize() != meshBytes, 400);
+            context.runOnClient(client -> client.levelRenderer.allChanged());
             context.waitFor(client -> manager() != originalManager, 200);
             testAbruptTargets(context);
             context.runOnClient(client -> {
-                client.gui.setScreen(null);
+                client.setScreen(null);
                 DynamicChunkie.LOG.info("Sodium beta.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
@@ -76,7 +77,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
             context.runOnClient(client -> {
                 new RenderDistanceController(client).apply(16);
                 setUniformTarget(2);
-                client.gui.setScreen(null);
+                client.setScreen(null);
             });
             context.waitFor(client -> {
                 int distance = client.options.renderDistance().get();
@@ -117,7 +118,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
         context.setScreen(() -> new DynamicChunkieModMenu().getModConfigScreenFactory().create(null));
         context.clickScreenButton(">");
         context.runOnClient(client -> {
-            var fields = client.gui.screen().children().stream().filter(w -> w instanceof EditBox)
+            var fields = client.screen.children().stream().filter(w -> w instanceof EditBox)
                     .map(w -> (EditBox)w).toList();
             fields.get(0).setValue("6");
             fields.get(1).setValue("12");

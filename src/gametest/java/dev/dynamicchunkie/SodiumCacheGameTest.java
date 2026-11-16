@@ -67,7 +67,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
             testAbruptTargets(context);
             context.runOnClient(client -> {
                 client.setScreen(null);
-                DynamicChunkie.LOG.info("Sodium beta.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
+                DynamicChunkie.LOG.info("Sodium compatibility regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
     }

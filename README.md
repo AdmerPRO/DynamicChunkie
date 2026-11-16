@@ -4,7 +4,7 @@ A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby g
 MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
 0.166.2+26.3. It uses focused client mixins to retain existing render-section storage, with optional
 integration for Sodium 0.9.3-beta.1+mc26.3.
-It has no reflection, replacement renderer, new culling algorithm, or server component. Simulation Distance is never read or modified.
+It has no reflection, replacement renderer, terrain Section Culling or server component. Entity occlusion is described below. Simulation Distance is never read or modified.
 
 ## Install and build
 
@@ -258,7 +258,7 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
 - Unknown chunks are conservatively blocked. Chunk arrival can temporarily lower targets,
   especially directly after joining or teleporting.
 - Profile values are heuristics, not measured visibility guarantees. There is no FPS feedback,
-  predictive loading, Section Culling, Occlusion Culling, or custom rendering.
+  predictive loading, Section Culling, terrain Occlusion Culling, or custom rendering.
 - Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
   Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.
 - Other mods controlling the same option can conflict. Only the exact Sodium version listed

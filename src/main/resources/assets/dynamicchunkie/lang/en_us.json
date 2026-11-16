@@ -29,5 +29,9 @@
   "dynamicchunkie.config.transitionIntervalMs": "Transition interval (ms)",
   "dynamicchunkie.config.smoothingFactor": "Score smoothing",
   "dynamicchunkie.config.deadZoneChunks": "Dead zone (chunks)",
-  "dynamicchunkie.config.targetStabilityMs": "Target stability (ms)"
+  "dynamicchunkie.config.targetStabilityMs": "Target stability (ms)",
+  "dynamicchunkie.config.page.4": "Entity culling",
+  "dynamicchunkie.config.enableEntityCulling": "Entity culling",
+  "dynamicchunkie.config.entityCullingBudget": "Entities checked per tick",
+  "dynamicchunkie.config.entityCullingDistance": "Check distance (blocks)"
 }

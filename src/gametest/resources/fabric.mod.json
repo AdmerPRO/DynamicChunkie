@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "environment": "client",
   "entrypoints": {
-    "fabric-client-gametest": ["dev.dynamicchunkie.RenderCacheGameTest"]
+    "fabric-client-gametest": [
+      "dev.dynamicchunkie.RenderCacheGameTest",
+      "dev.dynamicchunkie.EntityCullingGameTest"
+    ]
   }
 }

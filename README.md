@@ -202,7 +202,7 @@ can still cause frame-time spikes; this change does not promise zero lag.
 
 ## Validation and manual acceptance checks
 
-Fourteen unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
+Twenty unit tests cover relative tunnel/cave/surface scoring, altitude gating, continuous
 profile interpolation, environment ceilings, nonfinite/invalid settings, configured bounds,
 target stability under doorway oscillation, isolated UI drafts and restoration metadata preservation.
 Compilation validates the selected Minecraft and Fabric APIs.
@@ -317,3 +317,5 @@ missed. Turn the feature off in Mod Menu if a modded model's bounds are inaccura
 Unit tests cover voxel traversal, missing data, negative coordinates and hard work limits.
 The client regression places a pig behind stone/glass and checks glowing/player/disable
 exemptions. Long-session visual correctness with other entity/model mods remains manual.
+
+See [PORTS.md](PORTS.md) for all maintained Minecraft target branches.

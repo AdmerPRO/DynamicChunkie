@@ -14,7 +14,7 @@ public final class EntityCullingGameTest implements FabricClientGameTest {
     private boolean culled(Minecraft client) {
         Entity entity = pig(client);
         if (entity == null) return false;
-        var camera = client.gameRenderer.mainCamera().position();
+        var camera = client.gameRenderer.getMainCamera().position();
         return DynamicChunkie.entityCulling().shouldCull(entity, camera.x, camera.y, camera.z);
     }
     @Override public void runTest(ClientGameTestContext context) {
@@ -32,7 +32,7 @@ public final class EntityCullingGameTest implements FabricClientGameTest {
             world.getServer().runCommand("summon minecraft:pig 10.5 100 0.5 {NoAI:1b,PersistenceRequired:1b}");
             context.waitFor(this::culled, 400);
             context.runOnClient(client -> {
-                var camera = client.gameRenderer.mainCamera().position();
+                var camera = client.gameRenderer.getMainCamera().position();
                 if (DynamicChunkie.entityCulling().shouldCull(client.player, camera.x, camera.y, camera.z))
                     throw new AssertionError("Local player was culled");
             });

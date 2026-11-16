@@ -6,7 +6,6 @@
   "client": [
     "ViewAreaMixin",
     "LevelRendererMixin",
-    "LevelExtractorMixin",
     "sodium.SodiumWorldRendererMixin",
     "sodium.RenderSectionManagerMixin",
     "sodium.SodiumRendererAccessor",

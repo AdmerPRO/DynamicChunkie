@@ -30,16 +30,17 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
         testMenu(context);
         context.runOnClient(client -> new RenderDistanceController(client).apply(4));
         try (var world = context.worldBuilder().create()) {
-            context.runOnClient(client -> client.gui.setScreen(new Screen(Component.literal("Sodium cache test")) {
+            context.runOnClient(client -> client.setScreen(new Screen(Component.literal("Sodium cache test")) {
                 @Override public boolean isPauseScreen() { return false; }
             }));
-            world.getConnection().waitForChunksRender();
+            world.getClientLevel().waitForChunksRender();
             var ground = context.computeOnClient(client -> client.player.blockPosition().below());
             var position = SectionPos.of(ground);
             context.waitFor(client -> section(position) != null && section(position).isBuilt(), 1200);
             var originalManager = context.computeOnClient(client -> manager());
             var originalSection = context.computeOnClient(client -> section(position));
             var visibility = context.computeOnClient(client -> originalSection.getVisibilityData());
+            int meshUpload = context.computeOnClient(client -> originalSection.getLastUploadFrame());
             var storage = context.computeOnClient(client -> originalSection.getRegion().getStorage(DefaultTerrainRenderPasses.SOLID));
             int simulation = context.computeOnClient(client -> client.options.simulationDistance().get());
             long reused = context.computeOnClient(client -> RenderCache.preservedChanges());
@@ -53,7 +54,8 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                         require(manager() == originalManager, "Sodium manager was destroyed");
                         require(section(position) == originalSection, "Near Sodium section was replaced");
                         require(!originalSection.isDisposed() && originalSection.isBuilt(), "Near section disappeared");
-                        require(originalSection.getVisibilityData() == visibility, "Near mesh was rebuilt");
+                        require(originalSection.getVisibilityData() == visibility, "Near visibility changed");
+                        require(originalSection.getLastUploadFrame() == meshUpload, "Near mesh was uploaded again");
                         require(originalSection.getRegion().getStorage(DefaultTerrainRenderPasses.SOLID) == storage,
                                 "Near mesh storage was replaced");
                         require(SodiumWorldRenderer.instance().getVisibleChunkCount() > 0, "Blank terrain frame");
@@ -61,15 +63,16 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                     });
                 }
             }
-            world.getServer().runOnServer(server -> world.getConnection().getServerLevel()
+            int beforeBlockUpdate=context.computeOnClient(client -> originalSection.getLastUploadFrame());
+            world.getServer().runOnServer(server -> server.overworld()
                     .setBlockAndUpdate(ground, Blocks.GOLD_BLOCK.defaultBlockState()));
-            context.waitFor(client -> originalSection.getVisibilityData() != visibility, 400);
-            context.runOnClient(client -> client.levelExtractor.allChanged());
+            context.waitFor(client -> originalSection.getLastUploadFrame() > beforeBlockUpdate, 400);
+            context.runOnClient(client -> client.levelRenderer.allChanged());
             context.waitFor(client -> manager() != originalManager, 200);
             testAbruptTargets(context);
             context.runOnClient(client -> {
-                client.gui.setScreen(null);
-                DynamicChunkie.LOG.info("Sodium beta.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
+                client.setScreen(null);
+                DynamicChunkie.LOG.info("Sodium 0.8.9+mc26.1.1 regression passed: manager/near mesh retained across 2/8/2/4; no empty terrain frames; block updates and full reload work; simulation unchanged");
             });
         }
         } finally { context.runOnClient(client -> DynamicChunkie.applyConfig(backupSettings)); }
@@ -80,7 +83,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
             context.runOnClient(client -> {
                 new RenderDistanceController(client).apply(16);
                 setUniformTarget(2);
-                client.gui.setScreen(null);
+                client.setScreen(null);
             });
             context.waitFor(client -> {
                 int distance = client.options.renderDistance().get();
@@ -121,7 +124,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
         context.setScreen(() -> new DynamicChunkieModMenu().getModConfigScreenFactory().create(null));
         context.clickScreenButton(">");
         context.runOnClient(client -> {
-            var fields = client.gui.screen().children().stream().filter(w -> w instanceof EditBox)
+            var fields = client.screen.children().stream().filter(w -> w instanceof EditBox)
                     .map(w -> (EditBox)w).toList();
             fields.get(0).setValue("6");
             fields.get(1).setValue("12");

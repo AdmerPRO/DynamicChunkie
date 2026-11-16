@@ -7,9 +7,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(Overlay.class)
+@Mixin(LoadingOverlay.class)
 abstract class LoadingPauseMixin {
-    @Inject(method="isPausing",at=@At("RETURN"),cancellable=true)
+    @Inject(method="isPauseScreen",at=@At("RETURN"),cancellable=true)
     private void dynamicchunkie$playWhileReloading(CallbackInfoReturnable<Boolean> cir) {
         if ((Object)this instanceof LoadingOverlay && LoadingPresentation.readyForInput()) cir.setReturnValue(false);
     }

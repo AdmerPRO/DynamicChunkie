@@ -1,4 +1,4 @@
-name: Client integration tests
+name: Client startup tests
 
 # Graphical client tests use software rendering; run them explicitly when needed.
 on:
@@ -63,7 +63,7 @@ jobs:
           if [ -n "$GRADLE_ARGUMENTS" ]; then
             client_test_args+=("$GRADLE_ARGUMENTS")
           fi
-          xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew --no-daemon --stacktrace runClientGameTest "${client_test_args[@]}"
+          xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew --no-daemon --stacktrace runClient -PsmokeTest "${client_test_args[@]}"
 
       - name: Upload client diagnostics
         if: always()
@@ -71,9 +71,9 @@ jobs:
         with:
           name: client-test-results-${{ matrix.renderer }}-${{ github.sha }}
           path: |
-            build/run/clientGameTest/logs/
-            build/run/clientGameTest/crash-reports/
-            build/run/clientGameTest/screenshots/
+            run/logs/
+            run/crash-reports/
+            run/screenshots/
             build/reports/
           if-no-files-found: ignore
           retention-days: 14

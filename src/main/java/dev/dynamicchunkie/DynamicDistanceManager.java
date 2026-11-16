@@ -105,7 +105,7 @@ public final class DynamicDistanceManager {
         candidate=MemoryBudget.constrain(candidate,controller.current(),config.minRenderDistance,memoryPressure);
         if (config.enableMemoryManagement)
             candidate=Math.min(candidate,MemoryBudget.reservationRadius(config.minRenderDistance,config.maxRenderDistance,
-                    client.level.getMaxSectionY()-client.level.getMinSectionY()+1,config.cacheMemoryLimitMb));
+                    client.level.getSectionsCount(),config.cacheMemoryLimitMb));
         target=stableTarget.update(config.bound(candidate),now,config);
         int current=controller.current(),bounded=config.bound(current);
         if (current!=bounded) {controller.apply(bounded);lastApplied=controller.current();return;}

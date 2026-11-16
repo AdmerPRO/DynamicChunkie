@@ -21,6 +21,7 @@ public final class EntityCulling {
     private final DynamicChunkieConfig config;
     private final boolean externalCuller = FabricLoader.getInstance().isModLoaded("entityculling");
     private final IdentityHashMap<Entity, State> states = new IdentityHashMap<>();
+    private final Set<Entity> scheduled=Collections.newSetFromMap(new IdentityHashMap<>());
     private final ArrayDeque<Entity> queue = new ArrayDeque<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private final VoxelOcclusion.Blocks blocks = this::blockAt;
@@ -34,7 +35,7 @@ public final class EntityCulling {
         int blockedSamples;
     }
     public EntityCulling(DynamicChunkieConfig config) { this.config = config; }
-    public void clear() { states.clear(); queue.clear(); world = null; hidden = 0; snapshotAt = 0; }
+    public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; hidden = 0; snapshotAt = 0; }
     public boolean enabled() { return config.enabled && config.enableEntityCulling && !externalCuller; }
     public int cachedHidden() { return hidden; }
 
@@ -43,16 +44,19 @@ public final class EntityCulling {
         if (world != client.level) { clear(); world = client.level; }
         long now = System.nanoTime();
         if (now - snapshotAt > 500_000_000L || queue.isEmpty()) {
-            queue.clear();
+            queue.clear();scheduled.clear();
             for (Entity entity : world.entitiesForRendering()) {
-                if (candidate(entity, client)) queue.addLast(entity);
+                if (candidate(entity, client)) {queue.addLast(entity);scheduled.add(entity);}
                 if (queue.size() >= 2048) break;
             }
-            states.keySet().removeIf(entity -> entity.isRemoved() || !candidate(entity, client));
+            states.keySet().removeIf(entity -> !scheduled.contains(entity));
             snapshotAt = now;
         }
         Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
-        int count = Math.min(config.entityCullingBudget, queue.size());
+        int budget=config.entityCullingBudget;
+        if (config.enableHardwareAdaptive && dev.dynamicchunkie.DynamicChunkie.distanceManager().performance().cpuPressure())
+            budget=Math.max(1,budget/2);
+        int count = Math.min(budget, queue.size());
         for (int i = 0; i < count; i++) {
             Entity entity = queue.removeFirst();
             if (!entity.isRemoved()) {

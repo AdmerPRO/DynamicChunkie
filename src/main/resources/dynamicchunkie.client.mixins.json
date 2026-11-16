@@ -9,7 +9,9 @@
     "sodium.SodiumWorldRendererMixin",
     "sodium.RenderSectionManagerMixin",
     "sodium.SodiumRendererAccessor",
-    "EntityRenderDispatcherMixin"
+    "EntityRenderDispatcherMixin",
+    "EnvironmentRevisionMixin",
+    "PerformanceFrameMixin"
   ],
   "injectors": {
     "defaultRequire": 1

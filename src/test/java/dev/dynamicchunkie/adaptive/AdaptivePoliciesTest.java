@@ -4,6 +4,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdaptivePoliciesTest {
+    @Test void wallPredictionDoesNotMistakeUnknownChunksForSolidTerrain() {
+        assertFalse(AnalysisPolicy.approachingWall(true,30,0));
+        assertFalse(AnalysisPolicy.approachingWall(false,30,.2));
+        assertFalse(AnalysisPolicy.approachingWall(true,30,1));
+        assertTrue(AnalysisPolicy.approachingWall(true,30,.2));
+    }
     @Test void movementSelectsRequestedIntervalsAndCpuPressureSlowsAnalysis() {
         assertEquals(1500,AnalysisPolicy.interval(0,false,false,false,1500,750,250,true,900));
         assertEquals(750,AnalysisPolicy.interval(4,false,false,false,1500,750,250,true,900));

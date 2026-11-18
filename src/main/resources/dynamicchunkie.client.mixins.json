@@ -23,7 +23,10 @@
     "BlockEntityDistanceMixin",
     "ParticleBudgetMixin",
     "CloudQualityMixin",
-    "ProfilerExtractionMixin"
+    "ProfilerExtractionMixin",
+    "TerrainDrawMixin",
+    "sodium.SodiumTerrainDrawMixin",
+    "sodium.SodiumTerrainRegionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

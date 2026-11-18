@@ -74,5 +74,12 @@
   "dynamicchunkie.config.particleVisualDistance": "Dystans cząsteczek",
   "dynamicchunkie.config.enableSmartClouds": "Adaptacyjna jakość chmur",
   "dynamicchunkie.config.profilerOverlay": "Profiler wydajności",
-  "dynamicchunkie.config.entityLimit": "%s (0 = bez limitu)"
+  "dynamicchunkie.config.entityLimit": "%s (0 = bez limitu)",
+  "dynamicchunkie.config.page.13": "Widoczność sekcji terenu",
+  "dynamicchunkie.config.enableTerrainSectionCulling": "Konserwatywny culling terenu",
+  "dynamicchunkie.config.terrainChecksPerFrame": "Testy sekcji na klatkę",
+  "dynamicchunkie.config.particleTypes": "Budżety typów cząsteczek",
+  "dynamicchunkie.config.particleBudget": "%s: budżet (0 = wyłącz)",
+  "dynamicchunkie.config.particleImportant": "Ważne: %s",
+  "dynamicchunkie.config.protectImportantEntities": "Chroń nazwane / świecące encje"
 }

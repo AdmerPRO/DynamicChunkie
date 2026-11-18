@@ -25,6 +25,7 @@ public final class ParticlePolicy {
         double radius=c.particleVisualDistance*factor;
         if(client.gameRenderer.mainCamera().position().distanceToSqr(x,y,z)>radius*radius)return true;
         int limit=c.particleTypeBudgets.getOrDefault(id,c.particleSpawnBudget);
+        if(limit==0)return true;
         int used=counts.getOrDefault(id,0);
         if(active+total>=c.particleActiveLimit || total>=Math.max(1,(int)(c.particleSpawnBudget*factor)) ||
                 used>=Math.max(1,(int)(limit*factor)))return true;

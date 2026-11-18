@@ -12,7 +12,6 @@ abstract class CloudQualityMixin {
         var c=DynamicChunkie.configOrNull();
         if(c==null || !c.enabled || !c.enableSmartClouds)return;
         double scale=EntityVisualPolicy.scale();
-        if(scale<.5)cir.setReturnValue(CloudStatus.OFF);
-        else if(scale<.8 && cir.getReturnValue()==CloudStatus.FANCY)cir.setReturnValue(CloudStatus.FAST);
+        cir.setReturnValue(dev.dynamicchunkie.visual.VisualBudget.clouds(cir.getReturnValue(),scale));
     }
 }

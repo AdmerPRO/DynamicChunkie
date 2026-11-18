@@ -23,6 +23,8 @@ public final class RenderCache {
     public static boolean sodiumEnabled() {
         return config != null && sodiumCompatible && config.enabled && config.preserveRenderCache;
     }
+    public static boolean sodiumSupported() {return sodiumCompatible;}
+    public static boolean sodiumPresent() {return sodium;}
     public static boolean canChangeDistance() {
         return !sodium || sodiumEnabled();
     }

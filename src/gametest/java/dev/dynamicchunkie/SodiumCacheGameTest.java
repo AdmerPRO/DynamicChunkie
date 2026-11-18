@@ -25,7 +25,7 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
     }
     @Override public void runTest(ClientGameTestContext context) {
         var backupSettings = context.computeOnClient(client -> DynamicChunkie.config().copy());
-        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
+        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTerrainSectionCulling=false; c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
         try {
         testMenu(context);
         context.runOnClient(client -> new RenderDistanceController(client).apply(4));
@@ -61,6 +61,11 @@ public final class SodiumCacheGameTest implements FabricClientGameTest {
                     });
                 }
             }
+            long batchInvalidations=context.computeOnClient(client -> dev.dynamicchunkie.compat.SodiumTerrainCache.invalidations());
+            context.runOnClient(client -> client.player.setPos(client.player.getX()+.01,client.player.getY(),client.player.getZ()));
+            context.waitTicks(3);
+            context.runOnClient(client -> require(dev.dynamicchunkie.compat.SodiumTerrainCache.invalidations()==batchInvalidations,
+                    "Disabled terrain culling invalidates Sodium batches while moving"));
             world.getServer().runOnServer(server -> world.getConnection().getServerLevel()
                     .setBlockAndUpdate(ground, Blocks.GOLD_BLOCK.defaultBlockState()));
             context.waitFor(client -> originalSection.getVisibilityData() != visibility, 400);

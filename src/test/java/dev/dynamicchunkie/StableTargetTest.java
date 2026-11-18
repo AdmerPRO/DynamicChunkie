@@ -4,6 +4,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class StableTargetTest {
+    @Test void knownObstacleCanLowerButNeverRaiseAcceptedTargetImmediately() {
+        var config=new DynamicChunkieConfig();config.targetStabilityMs=10000;
+        var target=new StableTarget();assertEquals(24,target.update(24,1_000_000_000L,config));
+        assertEquals(24,target.update(8,1_100_000_000L,config));
+        assertEquals(8,target.restrict(8,config));assertEquals(8,target.restrict(16,config));
+    }
     @Test void acceptsInitialTargetAndRequiresSustainedChange() {
         var policy = new StableTarget();
         var c = new DynamicChunkieConfig();

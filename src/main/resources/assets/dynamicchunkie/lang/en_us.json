@@ -74,5 +74,12 @@
   "dynamicchunkie.config.particleVisualDistance": "Cosmetic particle distance",
   "dynamicchunkie.config.enableSmartClouds": "Adaptive cloud quality",
   "dynamicchunkie.config.profilerOverlay": "Performance profiler",
-  "dynamicchunkie.config.entityLimit": "%s (0 = unlimited)"
+  "dynamicchunkie.config.entityLimit": "%s (0 = unlimited)",
+  "dynamicchunkie.config.page.13": "Terrain section culling",
+  "dynamicchunkie.config.enableTerrainSectionCulling": "Conservative terrain culling",
+  "dynamicchunkie.config.terrainChecksPerFrame": "Section tests per frame",
+  "dynamicchunkie.config.particleTypes": "Particle type budgets",
+  "dynamicchunkie.config.particleBudget": "%s budget (0 = off)",
+  "dynamicchunkie.config.particleImportant": "Important: %s",
+  "dynamicchunkie.config.protectImportantEntities": "Protect named / glowing entities"
 }

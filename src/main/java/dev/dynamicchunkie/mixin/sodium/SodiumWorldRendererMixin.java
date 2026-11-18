@@ -18,6 +18,9 @@ abstract class SodiumWorldRendererMixin {
     @Shadow private RenderSectionManager renderSectionManager;
     @Shadow private UniformBufferManager uniformBufferManager;
 
+    @Inject(method="initRenderer",at=@At("HEAD"))
+    private void dynamicchunkie$resetTerrain(CallbackInfo ci) {dev.dynamicchunkie.terrain.TerrainCulling.invalidate();}
+
     @ModifyArg(method = "initRenderer", at = @At(value = "INVOKE",
             target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/UniformBufferManager;<init>(Lnet/minecraft/client/multiplayer/ClientLevel;I)V"), index = 1)
     private int dynamicchunkie$reserveTimes(int actual) {

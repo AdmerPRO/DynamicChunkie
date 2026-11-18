@@ -8,7 +8,8 @@
       "dev.dynamicchunkie.RenderCacheGameTest",
       "dev.dynamicchunkie.EntityCullingGameTest",
       "dev.dynamicchunkie.TransparentLoadingGameTest",
-      "dev.dynamicchunkie.VisualPoliciesGameTest"
+      "dev.dynamicchunkie.VisualPoliciesGameTest",
+      "dev.dynamicchunkie.TerrainCullingGameTest"
     ]
   }
 }

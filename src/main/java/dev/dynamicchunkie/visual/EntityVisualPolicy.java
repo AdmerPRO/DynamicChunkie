@@ -23,15 +23,14 @@ public final class EntityVisualPolicy {
             tracked.clear();selected.clear();candidates.clear();world=null;scale=1;return;
         }
         double mean=DynamicChunkie.distanceManager().performance().meanMs();
-        int fps=Math.max(15,Math.min(c.targetFps,client.options.framerateLimit().get()));
-        double desired=mean>0?Math.max(.35,Math.min(1,1000.0/fps/mean)):1;
+        double desired=VisualBudget.scale(mean,c.targetFps,client.options.framerateLimit().get());
         scale+=(desired-scale)*.025;
         long now=System.nanoTime();
         if(world==client.level && now-sampled<250_000_000L)return;
         world=client.level;sampled=now;tracked.clear();selected.clear();candidates.clear();
         if(!c.enableEntityTypeLimits)return;
         for(Entity entity:client.level.entitiesForRendering()) {
-            if(entity instanceof Player || entity.isCurrentlyGlowing() || entity.hasCustomName())continue;
+            if(entity instanceof Player || c.protectImportantEntities && (entity.isCurrentlyGlowing() || entity.hasCustomName()))continue;
             String id=BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
             if(c.entityTypeLimits.getOrDefault(id,0)>0)candidates.add(entity);
         }
@@ -50,7 +49,7 @@ public final class EntityVisualPolicy {
     public static boolean hide(Entity entity,double x,double y,double z) {
         var c=DynamicChunkie.configOrNull();
         if(c==null || !c.enabled)return false;
-        if(entity==Minecraft.getInstance().player || entity.isCurrentlyGlowing() || entity.hasCustomName())return false;
+        if(entity==Minecraft.getInstance().player || c.protectImportantEntities && (entity.isCurrentlyGlowing() || entity.hasCustomName()))return false;
         boolean hidden=c.enableEntityTypeLimits && tracked.contains(entity.getId()) && !selected.contains(entity.getId());
         if(c.enableAdaptiveEntityDistance) {
             double distance=entity instanceof Player?c.playerVisualDistance:

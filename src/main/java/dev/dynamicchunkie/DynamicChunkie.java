@@ -36,6 +36,7 @@ public final class DynamicChunkie implements ClientModInitializer {
         });
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientTickEvents.END_CLIENT_TICK.register(culling::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(dev.dynamicchunkie.terrain.TerrainCulling::tick);
         ClientTickEvents.END_CLIENT_TICK.register(dev.dynamicchunkie.visual.ParticlePolicy::tick);
         ClientTickEvents.END_CLIENT_TICK.register(dev.dynamicchunkie.visual.EntityVisualPolicy::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);

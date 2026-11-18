@@ -17,6 +17,6 @@ class VisualConfigTest {
         c.particleTypeBudgets.put("minecraft:smoke",-1);c.validate();
         assertEquals(8,c.mobVisualDistance);assertEquals(1024,c.playerVisualDistance);
         assertEquals(100,c.particleActiveLimit);assertEquals(0,c.entityTypeLimits.get("minecraft:cow"));
-        assertEquals(1,c.particleTypeBudgets.get("minecraft:smoke"));
+        assertEquals(0,c.particleTypeBudgets.get("minecraft:smoke"));
     }
 }

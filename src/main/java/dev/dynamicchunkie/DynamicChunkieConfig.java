@@ -9,6 +9,9 @@ import java.io.IOException;
 public final class DynamicChunkieConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
+    public boolean protectImportantEntities=true;
+    public boolean enableTerrainSectionCulling=false;
+    public int terrainChecksPerFrame=128;
     public boolean profilerOverlay=false;
     public boolean enableAdaptiveParticles=false, enableSmartClouds=false;
     public int particleSpawnBudget=100, particleActiveLimit=4000, particleVisualDistance=64;
@@ -51,12 +54,13 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        terrainChecksPerFrame=clamp(terrainChecksPerFrame,8,1024);
         particleSpawnBudget=clamp(particleSpawnBudget,1,10000);
         particleActiveLimit=clamp(particleActiveLimit,100,100000);
         particleVisualDistance=clamp(particleVisualDistance,8,512);
         if(particleTypeBudgets==null)particleTypeBudgets=new java.util.LinkedHashMap<>();
         particleTypeBudgets.entrySet().removeIf(e -> e.getKey()==null || e.getValue()==null);
-        particleTypeBudgets.replaceAll((key,value)->clamp(value,1,10000));
+        particleTypeBudgets.replaceAll((key,value)->clamp(value,0,10000));
         if(importantParticleTypes==null)importantParticleTypes=new java.util.HashSet<>();
         mobVisualDistance=clamp(mobVisualDistance,8,512);
         playerVisualDistance=clamp(playerVisualDistance,16,1024);
@@ -98,6 +102,8 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        protectImportantEntities=other.protectImportantEntities;
+        enableTerrainSectionCulling=other.enableTerrainSectionCulling;terrainChecksPerFrame=other.terrainChecksPerFrame;
         profilerOverlay=other.profilerOverlay;
         enableAdaptiveParticles=other.enableAdaptiveParticles;enableSmartClouds=other.enableSmartClouds;
         particleSpawnBudget=other.particleSpawnBudget;particleActiveLimit=other.particleActiveLimit;

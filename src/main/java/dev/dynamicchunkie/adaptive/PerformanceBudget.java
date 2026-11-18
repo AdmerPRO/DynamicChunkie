@@ -7,7 +7,7 @@ public final class PerformanceBudget {
     private final double[] frames=new double[120], scratch=new double[120];
     private int count,index,limit=32;
     private double cpuMs=Double.NaN, workMs, gpu=Double.NaN, mean,p95;
-    private long started, lastEvaluation, unhealthySince, healthySince;
+    private long started, lastEvaluation, unhealthySince, healthySince,lastSummary;
     private boolean cpuPressure;
     private String reason="Warming up";
 
@@ -28,10 +28,7 @@ public final class PerformanceBudget {
         if (count<30 || now-started<5_000_000_000L) return Math.min(nominal,limit);
         if (now-lastEvaluation<1_000_000_000L) return Math.min(nominal,limit);
         lastEvaluation=now;
-        double sum=0;
-        for (int i=0;i<count;i++) {sum+=frames[i];scratch[i]=frames[i];}
-        mean=sum/count;Arrays.sort(scratch,0,count);
-        p95=scratch[Math.min(count-1,(int)Math.ceil(count*.95)-1)];
+        summarize(now);
         double budget=1000.0/targetFps;
         boolean slow=mean>budget*1.10 || p95>budget*1.25;
         boolean gpuBusy=hardwareEnabled && !Double.isNaN(gpu) && gpu>92;
@@ -56,7 +53,15 @@ public final class PerformanceBudget {
         }
         return Math.max(minimum,Math.min(nominal,limit));
     }
-    public void reset() {count=index=0;started=lastEvaluation=unhealthySince=healthySince=0;cpuPressure=false;cpuMs=Double.NaN;reason="Warming up";}
+    public void summarize(long now) {
+        if(count==0 || now-lastSummary<1_000_000_000L)return;
+        lastSummary=now;
+        double sum=0;
+        for (int i=0;i<count;i++) {sum+=frames[i];scratch[i]=frames[i];}
+        mean=sum/count;Arrays.sort(scratch,0,count);
+        p95=scratch[Math.min(count-1,(int)Math.ceil(count*.95)-1)];
+    }
+    public void reset() {count=index=0;started=lastEvaluation=unhealthySince=healthySince=0;cpuPressure=false;cpuMs=Double.NaN;mean=p95=workMs=0;gpu=Double.NaN;lastSummary=0;reason="Warming up";}
     public boolean cpuPressure() {return cpuPressure;}
     public double cpuMs() {return cpuMs;}
     public double meanMs() {return mean;}

@@ -25,11 +25,12 @@ public final class DynamicDistanceManager {
     public void onFrame(Minecraft client) {
         long now=System.nanoTime();
         long cpu=THREADS.isCurrentThreadCpuTimeSupported()?THREADS.getCurrentThreadCpuTime():-1;
-        boolean sampling=config.enabled && client.level!=null && client.player!=null &&
+        boolean sampling=(config.enabled || config.profilerOverlay) && client.level!=null && client.player!=null &&
                 client.gui.screen()==null && !client.isPaused();
         if (sampling && wasSampling && lastFrame!=0) {
             performance.record((now-lastFrame)/1e6,client.getFrameTimeNs()/1e6,
                     cpu>=0 && lastCpu>=0?(cpu-lastCpu)/1e6:Double.NaN,client.getGpuUtilization());
+            performance.summarize(now);
         } else if (wasSampling) performance.reset();
         wasSampling=sampling;
         lastFrame=now;lastCpu=cpu;
@@ -92,7 +93,7 @@ public final class DynamicDistanceManager {
                     config.cacheMemoryLimitMb*1024L*1024);
             if (cached==null) analysisMs=analysisMs*.8+(System.nanoTime()-begin)/1e6*.2;
             smoothed=Double.isNaN(smoothed)?score.openness():smoothed+config.smoothingFactor*(score.openness()-smoothed);
-            if(config.enablePrediction && score.elytra() && score.speed()>8 && score.forward()<.15)
+            if(config.enablePrediction && AnalysisPolicy.approachingWall(score.elytra(),score.speed(),score.forward()))
                 smoothed=Math.min(smoothed,score.openness());
             lastAnalysis=now;lastYaw=player.getYRot();
         }
@@ -109,6 +110,8 @@ public final class DynamicDistanceManager {
             candidate=Math.min(candidate,MemoryBudget.reservationRadius(config.minRenderDistance,config.maxRenderDistance,
                     client.level.getSectionsCount(),config.cacheMemoryLimitMb));
         target=stableTarget.update(config.bound(candidate),now,config);
+        if(config.enablePrediction && AnalysisPolicy.approachingWall(score.elytra(),score.speed(),score.forward()))
+            target=stableTarget.restrict(candidate,config);
         int current=controller.current(),bounded=config.bound(current);
         if (current!=bounded) {controller.apply(bounded);lastApplied=controller.current();return;}
         if (Math.abs(target-current)<=config.deadZoneChunks) return;

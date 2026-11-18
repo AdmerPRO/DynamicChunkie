@@ -20,17 +20,18 @@ public final class VisualProfiler {
         var client=Minecraft.getInstance();var c=DynamicChunkie.configOrNull();
         if(c==null || !c.profilerOverlay || client.level==null || client.gui.hud.isHidden())return;
         var manager=DynamicChunkie.distanceManager();var perf=manager.performance();
-        int visible=client.levelExtractor.countRenderedSections();
-        String renderer="vanilla";
-        if(RenderCache.sodiumEnabled()) {visible=SodiumStats.visible();renderer="Sodium";}
+        int visible=Math.max(0,dev.dynamicchunkie.terrain.TerrainCulling.candidates()-dev.dynamicchunkie.terrain.TerrainCulling.skipped());
+        String renderer=RenderCache.sodiumPresent()?"Sodium":"vanilla";
         String[] lines={"DynamicChunkie profiler / "+renderer,
             String.format(java.util.Locale.ROOT,"FPS %d | frame mean/p95 %.1f / %.1f ms",client.getFps(),perf.meanMs(),perf.p95Ms()),
             String.format(java.util.Locale.ROOT,"Render-thread CPU EMA %.1f ms",perf.cpuMs()),
-            "Visible sections: "+visible+" | skipped: unavailable",
+            "Terrain visible candidates: "+visible+" | extra skipped: "+dev.dynamicchunkie.terrain.TerrainCulling.skipped(),
+            "Terrain occluders: "+dev.dynamicchunkie.terrain.TerrainCulling.occluders()+" | cache charged: "+dev.dynamicchunkie.terrain.TerrainCulling.chargedBytes()+" B",
             "Extracted entities / block entities: "+entities+" / "+blocks,
+            "GPU timing: "+(Double.isNaN(perf.gpuPercent())?"unavailable":String.format(java.util.Locale.ROOT,"%.0f%%",perf.gpuPercent())),
             "Analysis cache charged: "+manager.cacheBytes()+" bytes (geometry VRAM unknown)",
             "Frame time history: 180 frames / 0-100 ms"};
-        int y=graphics.guiHeight()-140;
+        int y=graphics.guiHeight()-164;
         for(String line:lines) {
             graphics.fill(5,y-1,12+client.font.width(line),y+10,0xB0000000);
             graphics.text(client.font,line,8,y,0xFFFFFFFF,true);y+=12;
@@ -41,8 +42,5 @@ public final class VisualProfiler {
             int height=(int)Math.min(48,ms*.48);
             graphics.fill(5+i,y+49-height,6+i,y+49,ms>33?0xFFFF5555:0xFF55FF88);
         }
-    }
-    private static final class SodiumStats {
-        static int visible() {return net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.instance().getVisibleChunkCount();}
     }
 }

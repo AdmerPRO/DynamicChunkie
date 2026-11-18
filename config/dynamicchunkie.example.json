@@ -63,5 +63,8 @@
     "minecraft:crit",
     "minecraft:totem_of_undying",
     "minecraft:enchanted_hit"
-  ]
+  ],
+  "enableTerrainSectionCulling": false,
+  "terrainChecksPerFrame": 128,
+  "protectImportantEntities": true
 }

@@ -24,5 +24,11 @@ final class StableTarget {
         }
         return accepted;
     }
+    int restrict(int candidate,DynamicChunkieConfig config) {
+        int bounded=config.bound(candidate);
+        accepted=accepted<config.minRenderDistance?bounded:Math.min(accepted,bounded);
+        pending=-1;
+        return accepted;
+    }
     void reset() { accepted = 0; pending = -1; }
 }

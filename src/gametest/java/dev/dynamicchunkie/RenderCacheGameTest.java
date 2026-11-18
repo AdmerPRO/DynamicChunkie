@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Blocks;
 public final class RenderCacheGameTest implements FabricClientGameTest {
     @Override public void runTest(ClientGameTestContext context) {
         var backupSettings = context.computeOnClient(client -> DynamicChunkie.config().copy());
-        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
+        context.runOnClient(client -> { var c = backupSettings.copy(); c.enableTerrainSectionCulling=false; c.enableTeleportRecovery=false; c.enableFpsAdaptive=false; c.enableHardwareAdaptive=false; DynamicChunkie.applyConfig(c); });
         try {
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("sodium")) {
             new SodiumCacheGameTest().runTest(context);

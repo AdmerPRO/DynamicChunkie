@@ -28,15 +28,9 @@ public final class EnvironmentAnalyzer {
             if(exitAhead)open=Math.min(1,open+.08*predicted);
             else if(sky && rays.previewSky() && predicted>.7 && predicted>r.horizontal()+.15)
                 open=Math.min(1,open+.06*(predicted-r.horizontal()));
-            if(flight && speed>8 && r.forward()<.15)open=Math.max(0,open-.12);
+            if(dev.dynamicchunkie.adaptive.AnalysisPolicy.approachingWall(flight,speed,r.forward()))open=Math.max(0,open-.12);
         }
-        double longAxis=Math.max(Math.min(r.front(),r.back()),Math.min(r.left(),r.right()));
-        double shortAxis=Math.min(Math.max(r.front(),r.back()),Math.max(r.left(),r.right()));
-        String name = exitAhead ? "Cave Exit Ahead" : r.down()>.8 && r.horizontal()>.35 ? "Chasm / Open Drop" :
-                !sky && longAxis>.45 && shortAxis<.25 ? "Narrow Passage" :
-                open<.13 ? "Narrow Tunnel" : !sky && r.horizontal()<.35 && r.up()<.4 ? "Enclosed Room" :
-                !sky ? "Large Cave / Covered Area" : r.horizontal()>.7 && r.up()>.8 && altitude>120 ? "Open Summit" :
-                open<.78 ? "Surface" : "High Open Sky";
+        String name=EnvironmentClassifier.classify(r,sky,altitude,open,exitAhead);
         return new EnvironmentScore(open, r.average(), r.horizontal(), r.vertical(), r.clear(),
                 sky, altitude, flight, speed, r.forward(), name, r.front(),r.back(),r.left(),r.right(),r.gaze(),predicted);
     }

@@ -10,6 +10,7 @@ public final class DebugOverlay {
     public static void register(DynamicDistanceManager manager) {
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("dynamicchunkie", "debug"), (context, tickCounter) -> {
+            dev.dynamicchunkie.visual.VisualProfiler.draw(context);
             Minecraft client = Minecraft.getInstance();
             if (!manager.config.debugMode || client.gui.hud.isHidden() || client.player == null) return;
             EnvironmentScore s = manager.score();

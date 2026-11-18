@@ -57,5 +57,22 @@
   "dynamicchunkie.config.teleportThresholdBlocks": "Teleport threshold (blocks)",
   "dynamicchunkie.config.combatGraceMs": "Combat exemption (ms)",
   "dynamicchunkie.config.simpleLoadingScreens": "Transparent loading bar",
-  "dynamicchunkie.config.loadingInputPassthrough": "Play during resource reload"
+  "dynamicchunkie.config.loadingInputPassthrough": "Play during resource reload",
+  "dynamicchunkie.config.page.10": "Entity render distances",
+  "dynamicchunkie.config.page.11": "Entity count limits",
+  "dynamicchunkie.config.enableAdaptiveEntityDistance": "Adaptive entity distance",
+  "dynamicchunkie.config.enableEntityTypeLimits": "Enable per-type entity limits",
+  "dynamicchunkie.config.mobVisualDistance": "Mob distance (blocks)",
+  "dynamicchunkie.config.playerVisualDistance": "Player distance (blocks)",
+  "dynamicchunkie.config.itemVisualDistance": "Dropped item distance",
+  "dynamicchunkie.config.armorStandVisualDistance": "Armor stand distance",
+  "dynamicchunkie.config.blockEntityVisualDistance": "Block entity distance",
+  "dynamicchunkie.config.page.12": "Particles, clouds and profiler",
+  "dynamicchunkie.config.enableAdaptiveParticles": "Adaptive particles",
+  "dynamicchunkie.config.particleSpawnBudget": "Cosmetic spawns per tick",
+  "dynamicchunkie.config.particleActiveLimit": "Cosmetic active soft limit",
+  "dynamicchunkie.config.particleVisualDistance": "Cosmetic particle distance",
+  "dynamicchunkie.config.enableSmartClouds": "Adaptive cloud quality",
+  "dynamicchunkie.config.profilerOverlay": "Performance profiler",
+  "dynamicchunkie.config.entityLimit": "%s (0 = unlimited)"
 }

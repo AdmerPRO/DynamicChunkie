@@ -58,6 +58,7 @@ public final class PerformanceBudget {
     }
     public void reset() {count=index=0;started=lastEvaluation=unhealthySince=healthySince=0;cpuPressure=false;cpuMs=Double.NaN;reason="Warming up";}
     public boolean cpuPressure() {return cpuPressure;}
+    public double cpuMs() {return cpuMs;}
     public double meanMs() {return mean;}
     public double p95Ms() {return p95;}
     public double gpuPercent() {return gpu;}

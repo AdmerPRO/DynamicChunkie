@@ -20,7 +20,27 @@ public final class ConfigScreen extends Screen {
         super(Component.literal("DynamicChunkie"));
         this.parent = parent;
     }
-    private Component text(String key) { return Component.translatable("dynamicchunkie.config." + key); }
+    private Component text(String key) {
+        if(key.startsWith("entityLimit:"))return Component.translatable("dynamicchunkie.config.entityLimit",key.substring(12));
+        return Component.translatable("dynamicchunkie.config." + key);
+    }
+    private java.util.List<net.minecraft.world.entity.EntityType<?>> types() {
+        return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.stream()
+                .sorted(java.util.Comparator.comparing(t -> group(t)+":"+net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(t))).toList();
+    }
+    private String group(net.minecraft.world.entity.EntityType<?> type) {
+        String id=net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).getPath();
+        if(java.util.Set.of("enderman","endermite","ender_dragon","shulker").contains(id))return "End";
+        if(java.util.Set.of("blaze","ghast","piglin","piglin_brute","hoglin","zoglin","strider","magma_cube","wither_skeleton","zombified_piglin").contains(id))return "Nether";
+        if(java.util.Set.of("cow","pig","sheep","chicken","rabbit","mooshroom").contains(id))return "Farm";
+        return switch(type.getCategory().getName()) {
+            case "creature" -> "Animals";
+            case "monster" -> "Monsters";
+            case "water_creature","water_ambient","underground_water_creature","axolotls" -> "Water";
+            default -> "Misc";
+        };
+    }
+    private int pageCount() {return 13+(types().size()+4)/5;}
     @Override protected void init() {
         labels.clear();
         row = 0;
@@ -31,6 +51,43 @@ public final class ConfigScreen extends Screen {
         addRenderableWidget(Button.builder(text("next"), b -> changePage(1))
                 .bounds(left + rowWidth - 55, 39, 55, 20).build());
         switch (page) {
+            case 10 -> {
+                toggle("enableAdaptiveEntityDistance",()->draft.enableAdaptiveEntityDistance,v->draft.enableAdaptiveEntityDistance=v);
+                integer("mobVisualDistance",draft.mobVisualDistance,v->draft.mobVisualDistance=v);
+                integer("playerVisualDistance",draft.playerVisualDistance,v->draft.playerVisualDistance=v);
+                integer("itemVisualDistance",draft.itemVisualDistance,v->draft.itemVisualDistance=v);
+                integer("armorStandVisualDistance",draft.armorStandVisualDistance,v->draft.armorStandVisualDistance=v);
+                integer("blockEntityVisualDistance",draft.blockEntityVisualDistance,v->draft.blockEntityVisualDistance=v);
+            }
+            case 12 -> {
+                toggle("enableAdaptiveParticles",()->draft.enableAdaptiveParticles,v->draft.enableAdaptiveParticles=v);
+                integer("particleSpawnBudget",draft.particleSpawnBudget,v->draft.particleSpawnBudget=v);
+                integer("particleActiveLimit",draft.particleActiveLimit,v->draft.particleActiveLimit=v);
+                integer("particleVisualDistance",draft.particleVisualDistance,v->draft.particleVisualDistance=v);
+                toggle("enableSmartClouds",()->draft.enableSmartClouds,v->draft.enableSmartClouds=v);
+                toggle("profilerOverlay",()->draft.profilerOverlay,v->draft.profilerOverlay=v);
+            }
+            case 11 -> {
+                toggle("enableEntityTypeLimits",()->draft.enableEntityTypeLimits,v->draft.enableEntityTypeLimits=v);
+                String[] groups={"Animals","Monsters","Water","End","Nether","Farm","Misc"};
+                for(int i=0;i<groups.length;i++) {
+                    String category=groups[i];int column=i%3,line=i/3;
+                    addRenderableWidget(Button.builder(Component.literal(category),b->{
+                        var entries=types();
+                        for(int k=0;k<entries.size();k++)if(group(entries.get(k)).equals(category)) {
+                            if(!invalid.isEmpty()) {error=text("invalid");return;}
+                            page=13+k/5;rebuildWidgets();return;
+                        }
+                    }).bounds(left+column*(rowWidth/3),92+line*24,rowWidth/3-4,20).build());
+                }
+            }
+            default -> {
+                var types=types();int start=(page-13)*5;
+                for(int i=start;i<Math.min(types.size(),start+5);i++) {
+                    var type=types.get(i);String id=net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
+                    integer("entityLimit:"+group(type)+" / "+id,draft.entityTypeLimits.getOrDefault(id,0),v->draft.entityTypeLimits.put(id,v));
+                }
+            }
             case 0 -> {
                 toggle("enabled", () -> draft.enabled, v -> draft.enabled = v);
                 toggle("preserveRenderCache", () -> draft.preserveRenderCache, v -> draft.preserveRenderCache = v);
@@ -107,7 +164,7 @@ public final class ConfigScreen extends Screen {
     }
     private void changePage(int delta) {
         if (!invalid.isEmpty()) { error = text("invalid"); return; }
-        page = Math.floorMod(page + delta, 10);
+        page = Math.floorMod(page + delta, pageCount());
         error = null;
         rebuildWidgets();
     }
@@ -153,7 +210,7 @@ public final class ConfigScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         graphics.text(font, title, (width - font.width(title)) / 2, 10, 0xFFFFFFFF);
-        Component pageTitle = text("page." + page);
+        Component pageTitle = page>=13?Component.literal("Entity limits / "+(page-12)):text("page." + page);
         graphics.text(font, pageTitle, (width - font.width(pageTitle)) / 2, 45, 0xFFFFFFFF);
         for (int i = 0; i < labels.size(); i++)
             if (labels.get(i) != null) graphics.text(font, text(labels.get(i)), left, 72 + i * 22, 0xFFFFFFFF);

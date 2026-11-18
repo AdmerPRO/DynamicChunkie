@@ -42,5 +42,26 @@
   "targetFps": 60,
   "predictionLookaheadMs": 1000,
   "teleportThresholdBlocks": 48,
-  "combatGraceMs": 5000
+  "combatGraceMs": 5000,
+  "enableAdaptiveEntityDistance": false,
+  "enableEntityTypeLimits": false,
+  "mobVisualDistance": 128,
+  "playerVisualDistance": 256,
+  "itemVisualDistance": 64,
+  "armorStandVisualDistance": 64,
+  "blockEntityVisualDistance": 96,
+  "entityTypeLimits": {},
+  "enableAdaptiveParticles": false,
+  "enableSmartClouds": false,
+  "profilerOverlay": false,
+  "particleSpawnBudget": 100,
+  "particleActiveLimit": 4000,
+  "particleVisualDistance": 64,
+  "particleTypeBudgets": {},
+  "importantParticleTypes": [
+    "minecraft:damage_indicator",
+    "minecraft:crit",
+    "minecraft:totem_of_undying",
+    "minecraft:enchanted_hit"
+  ]
 }

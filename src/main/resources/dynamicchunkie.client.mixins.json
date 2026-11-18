@@ -19,7 +19,11 @@
     "loading.LoadingPauseMixin",
     "loading.LoadingGameplayMixin",
     "loading.LoadingKeyboardMixin",
-    "loading.LoadingMouseMixin"
+    "loading.LoadingMouseMixin",
+    "BlockEntityDistanceMixin",
+    "ParticleBudgetMixin",
+    "CloudQualityMixin",
+    "ProfilerExtractionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

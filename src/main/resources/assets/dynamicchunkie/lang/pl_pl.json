@@ -57,5 +57,22 @@
   "dynamicchunkie.config.teleportThresholdBlocks": "Próg teleportacji (bloki)",
   "dynamicchunkie.config.combatGraceMs": "Ochrona w walce (ms)",
   "dynamicchunkie.config.simpleLoadingScreens": "Przezroczysty pasek ładowania",
-  "dynamicchunkie.config.loadingInputPassthrough": "Graj podczas ładowania zasobów"
+  "dynamicchunkie.config.loadingInputPassthrough": "Graj podczas ładowania zasobów",
+  "dynamicchunkie.config.page.10": "Dystans renderowania encji",
+  "dynamicchunkie.config.page.11": "Limity liczby encji",
+  "dynamicchunkie.config.enableAdaptiveEntityDistance": "Adaptacyjny dystans encji",
+  "dynamicchunkie.config.enableEntityTypeLimits": "Limity encji według typu",
+  "dynamicchunkie.config.mobVisualDistance": "Dystans mobów (bloki)",
+  "dynamicchunkie.config.playerVisualDistance": "Dystans graczy (bloki)",
+  "dynamicchunkie.config.itemVisualDistance": "Dystans przedmiotów",
+  "dynamicchunkie.config.armorStandVisualDistance": "Dystans stojaków na zbroję",
+  "dynamicchunkie.config.blockEntityVisualDistance": "Dystans encji blokowych",
+  "dynamicchunkie.config.page.12": "Cząsteczki, chmury i profiler",
+  "dynamicchunkie.config.enableAdaptiveParticles": "Adaptacyjne cząsteczki",
+  "dynamicchunkie.config.particleSpawnBudget": "Budżet emisji na tick",
+  "dynamicchunkie.config.particleActiveLimit": "Miękki limit cząsteczek",
+  "dynamicchunkie.config.particleVisualDistance": "Dystans cząsteczek",
+  "dynamicchunkie.config.enableSmartClouds": "Adaptacyjna jakość chmur",
+  "dynamicchunkie.config.profilerOverlay": "Profiler wydajności",
+  "dynamicchunkie.config.entityLimit": "%s (0 = bez limitu)"
 }

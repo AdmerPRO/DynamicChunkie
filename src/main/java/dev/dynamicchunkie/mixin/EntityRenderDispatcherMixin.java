@@ -14,6 +14,7 @@ abstract class EntityRenderDispatcherMixin {
     @Inject(method = "shouldRender", at = @At("RETURN"), cancellable = true)
     private void dynamicchunkie$occluded(Entity entity, Frustum frustum, double x, double y, double z,
             float partialTick, CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValue() && dev.dynamicchunkie.visual.EntityVisualPolicy.hide(entity,x,y,z)) cir.setReturnValue(false);
         if (cir.getReturnValue() && DynamicChunkie.entityCulling() != null && DynamicChunkie.entityCulling().shouldCull(entity, x, y, z)) cir.setReturnValue(false);
     }
 }

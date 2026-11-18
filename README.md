@@ -314,3 +314,5 @@ memory accounting, teleport/combat rules, transparent loading and manual validat
 Separate branches and artifacts are available for **26.2, 26.1.2, 26.1.1 and 26.1**
 (Java 25), alongside the existing 1.21.x ports. Use the JAR for your exact Minecraft
 version; dependency selections and validation are listed in [PORTS.md](PORTS.md).
+
+Development on master (26.3): [optional visual controls and current limitations](docs/visual-controls-26.3.md). These additions have not been ported to the other version branches.

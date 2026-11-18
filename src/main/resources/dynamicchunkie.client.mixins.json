@@ -26,7 +26,11 @@
     "ProfilerExtractionMixin",
     "TerrainDrawMixin",
     "sodium.SodiumTerrainDrawMixin",
-    "sodium.SodiumTerrainRegionMixin"
+    "sodium.SodiumTerrainRegionMixin",
+    "FrustumBoundsAccess",
+    "HotSoftUpdateMixin",
+    "sodium.SodiumSectionCandidatesAccess",
+    "sodium.SodiumHotSoftUpdateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

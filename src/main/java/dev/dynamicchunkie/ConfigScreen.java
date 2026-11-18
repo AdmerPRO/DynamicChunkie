@@ -66,10 +66,12 @@ public final class ConfigScreen extends Screen {
             case 13 -> {
                 toggle("enableTerrainSectionCulling",()->draft.enableTerrainSectionCulling,v->draft.enableTerrainSectionCulling=v);
                 integer("terrainChecksPerFrame",draft.terrainChecksPerFrame,v->draft.terrainChecksPerFrame=v);
+                toggle("enableHotSoftSections",()->draft.enableHotSoftSections,v->draft.enableHotSoftSections=v);
+                integer("hotSoftScanBudgetMicros",draft.hotSoftScanBudgetMicros,v->draft.hotSoftScanBudgetMicros=v);
                 addRenderableWidget(Button.builder(text("particleTypes"),b->{
                     if(!invalid.isEmpty()) {error=text("invalid");return;}
                     page=particleStart();rebuildWidgets();
-                }).bounds(left,116,rowWidth,20).build());
+                }).bounds(left,162,rowWidth,20).build());
             }
             case 10 -> {
                 toggle("enableAdaptiveEntityDistance",()->draft.enableAdaptiveEntityDistance,v->draft.enableAdaptiveEntityDistance=v);

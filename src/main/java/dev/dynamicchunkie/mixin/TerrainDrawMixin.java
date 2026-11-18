@@ -15,7 +15,7 @@ abstract class TerrainDrawMixin {
             target="Lnet/minecraft/client/renderer/LevelRenderer;visibleSections:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"))
     private ObjectArrayList<RenderSection> dynamicchunkie$visible(LevelRenderer renderer,Operation<ObjectArrayList<RenderSection>> original) {
         var source=original.call(renderer);TerrainCulling.hook();
-        if(!TerrainCulling.active()) {
+        if(!TerrainCulling.active() && !dev.dynamicchunkie.sections.HotSoftSections.active()) {
             if(TerrainCulling.metricsEnabled())for(RenderSection section:source)if(section.getSectionMesh().hasRenderableLayers()) {
                 var pos=section.getRenderOrigin();TerrainCulling.candidate(pos.getX(),pos.getY(),pos.getZ());
             }
@@ -26,7 +26,7 @@ abstract class TerrainDrawMixin {
             var pos=section.getRenderOrigin();
             boolean geometry=section.getSectionMesh().hasRenderableLayers();
             if(geometry)TerrainCulling.candidate(pos.getX(),pos.getY(),pos.getZ());
-            if(!geometry || !TerrainCulling.hide(pos.getX(),pos.getY(),pos.getZ()))
+            if(!geometry || (!TerrainCulling.hide(pos.getX(),pos.getY(),pos.getZ()) && dev.dynamicchunkie.sections.HotSoftSections.drawAllowed(pos.getX(),pos.getY(),pos.getZ())))
                 dynamicchunkie$drawSections.add(section);
         }
         return dynamicchunkie$drawSections;

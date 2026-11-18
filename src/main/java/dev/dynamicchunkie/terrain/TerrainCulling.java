@@ -87,13 +87,18 @@ public final class TerrainCulling {
         wasActive=enabled;incomplete=false;
         if(updateBatches && RenderCache.sodiumSupported())dev.dynamicchunkie.compat.SodiumTerrainCache.prepare(generation);
     }
-    public static void noteCachedSkip(long key) {if(active())skipped.add(key);}
+    public static void invalidateDrawBatches() {
+        generation++;
+        if(RenderCache.sodiumSupported())dev.dynamicchunkie.compat.SodiumTerrainCache.prepare(generation);
+    }
+    public static void noteExternalSkip(int x,int y,int z){skipped.add(SectionPos.asLong(x>>4,y>>4,z>>4));}
+    public static void noteCachedSkip(long key){if(active() || dev.dynamicchunkie.sections.HotSoftSections.active())skipped.add(key);}
     public static void beginFrame() {
         skipped.clear();candidateSections.clear();countedRegions.clear();candidates=0;checks=0;hookCalls=0;spentNanos=0;
     }
     public static void endFrame() {lastSkipped=skipped.size();lastHooks=hookCalls;lastCandidates=candidates;}
     public static boolean metricsEnabled() {
-        var c=DynamicChunkie.configOrNull();return c!=null && (c.profilerOverlay || c.enabled && c.enableTerrainSectionCulling);
+        var c=DynamicChunkie.configOrNull();return dev.dynamicchunkie.benchmark.FrameCapture.recording() || c!=null && (c.profilerOverlay || c.enabled && (c.enableTerrainSectionCulling || c.enableHotSoftSections));
     }
     public static void candidate(int x,int y,int z) {
         if(metricsEnabled() && candidateSections.add(SectionPos.asLong(x>>4,y>>4,z>>4)))candidates++;

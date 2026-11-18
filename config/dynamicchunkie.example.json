@@ -66,5 +66,7 @@
   ],
   "enableTerrainSectionCulling": false,
   "terrainChecksPerFrame": 128,
-  "protectImportantEntities": true
+  "protectImportantEntities": true,
+  "enableHotSoftSections": false,
+  "hotSoftScanBudgetMicros": 1500
 }

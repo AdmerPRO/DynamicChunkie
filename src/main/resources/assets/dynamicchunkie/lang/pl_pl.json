@@ -81,5 +81,7 @@
   "dynamicchunkie.config.particleTypes": "Budżety typów cząsteczek",
   "dynamicchunkie.config.particleBudget": "%s: budżet (0 = wyłącz)",
   "dynamicchunkie.config.particleImportant": "Ważne: %s",
-  "dynamicchunkie.config.protectImportantEntities": "Chroń nazwane / świecące encje"
+  "dynamicchunkie.config.protectImportantEntities": "Chroń nazwane / świecące encje",
+  "dynamicchunkie.config.enableHotSoftSections": "Sekcje hot / soft (eksperymentalne)",
+  "dynamicchunkie.config.hotSoftScanBudgetMicros": "Budżet analizy sekcji (mikrosekundy)"
 }

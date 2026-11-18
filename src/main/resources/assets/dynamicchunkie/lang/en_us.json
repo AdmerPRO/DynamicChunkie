@@ -81,5 +81,7 @@
   "dynamicchunkie.config.particleTypes": "Particle type budgets",
   "dynamicchunkie.config.particleBudget": "%s budget (0 = off)",
   "dynamicchunkie.config.particleImportant": "Important: %s",
-  "dynamicchunkie.config.protectImportantEntities": "Protect named / glowing entities"
+  "dynamicchunkie.config.protectImportantEntities": "Protect named / glowing entities",
+  "dynamicchunkie.config.enableHotSoftSections": "Hot / soft sections (experimental)",
+  "dynamicchunkie.config.hotSoftScanBudgetMicros": "Section scan budget (microseconds)"
 }

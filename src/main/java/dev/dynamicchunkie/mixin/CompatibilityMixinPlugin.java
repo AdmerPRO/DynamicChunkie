@@ -14,6 +14,7 @@ public final class CompatibilityMixinPlugin implements IMixinConfigPlugin {
                 .orElse(false);
     }
     @Override public boolean shouldApplyMixin(String target, String mixin) {
+        if(mixin.endsWith(".HotSoftUpdateMixin") && FabricLoader.getInstance().isModLoaded("sodium"))return false;
         return !mixin.contains(".sodium.") || supportedSodium();
     }
     @Override public void onLoad(String pkg) {}

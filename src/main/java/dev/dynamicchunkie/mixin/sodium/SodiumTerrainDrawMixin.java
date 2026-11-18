@@ -15,7 +15,7 @@ abstract class SodiumTerrainDrawMixin {
         var region=((ChunkRenderList)(Object)this).getRegion();
         dev.dynamicchunkie.compat.SodiumTerrainCache.track(region);
         dev.dynamicchunkie.compat.SodiumTerrainCache.count(region);
-        if(!TerrainCulling.active())return source;
+        if(!TerrainCulling.active() && !dev.dynamicchunkie.sections.HotSoftSections.active())return source;
         return new ByteIterator() {
             private int next=-1;
             public boolean hasNext() {
@@ -25,7 +25,7 @@ abstract class SodiumTerrainDrawMixin {
                     int x=region.getOriginX()+16*net.caffeinemc.mods.sodium.client.render.chunk.LocalSectionIndex.unpackX(index);
                     int y=region.getOriginY()+16*net.caffeinemc.mods.sodium.client.render.chunk.LocalSectionIndex.unpackY(index);
                     int z=region.getOriginZ()+16*net.caffeinemc.mods.sodium.client.render.chunk.LocalSectionIndex.unpackZ(index);
-                    if(!TerrainCulling.hide(x,y,z)) {
+                    if(!TerrainCulling.hide(x,y,z) && dev.dynamicchunkie.sections.HotSoftSections.drawAllowed(x,y,z)) {
                         next=index;return true;
                     }
                     dev.dynamicchunkie.compat.SodiumTerrainCache.hidden(region,x,y,z);

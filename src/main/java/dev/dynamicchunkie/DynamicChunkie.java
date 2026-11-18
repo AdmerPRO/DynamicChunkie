@@ -16,6 +16,7 @@ public final class DynamicChunkie implements ClientModInitializer {
     private static dev.dynamicchunkie.culling.EntityCulling culling;
     public static dev.dynamicchunkie.culling.EntityCulling entityCulling() { return culling; }
     public static void onFrame() {
+        dev.dynamicchunkie.benchmark.FrameCapture.frame();
         dev.dynamicchunkie.visual.VisualProfiler.frame();
         if (manager!=null) manager.onFrame(net.minecraft.client.Minecraft.getInstance());
     }
@@ -41,7 +42,7 @@ public final class DynamicChunkie implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(dev.dynamicchunkie.visual.EntityVisualPolicy::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> LOG.info("DynamicChunkie client initialized"));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); dev.dynamicchunkie.sections.HotSoftSections.clear(); });
         DebugOverlay.register(manager);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->
             dispatcher.register(literal("dynamicchunkie")

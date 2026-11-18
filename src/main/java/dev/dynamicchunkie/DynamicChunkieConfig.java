@@ -9,6 +9,8 @@ import java.io.IOException;
 public final class DynamicChunkieConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
+    public boolean enableHotSoftSections=false;
+    public int hotSoftScanBudgetMicros=1500;
     public boolean protectImportantEntities=true;
     public boolean enableTerrainSectionCulling=false;
     public int terrainChecksPerFrame=128;
@@ -54,6 +56,7 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        hotSoftScanBudgetMicros=clamp(hotSoftScanBudgetMicros,250,10000);
         terrainChecksPerFrame=clamp(terrainChecksPerFrame,8,1024);
         particleSpawnBudget=clamp(particleSpawnBudget,1,10000);
         particleActiveLimit=clamp(particleActiveLimit,100,100000);
@@ -102,6 +105,7 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        enableHotSoftSections=other.enableHotSoftSections;hotSoftScanBudgetMicros=other.hotSoftScanBudgetMicros;
         protectImportantEntities=other.protectImportantEntities;
         enableTerrainSectionCulling=other.enableTerrainSectionCulling;terrainChecksPerFrame=other.terrainChecksPerFrame;
         profilerOverlay=other.profilerOverlay;

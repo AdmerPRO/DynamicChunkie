@@ -13,6 +13,7 @@ abstract class ProfilerExtractionMixin {
     @Inject(method="extract",at=@At("RETURN"))
     private void dynamicchunkie$counts(CallbackInfo ci) {
         dev.dynamicchunkie.terrain.TerrainCulling.prepareForDraw();
+        dev.dynamicchunkie.sections.HotSoftSections.capture();
         VisualProfiler.extracted(levelRenderState.entityRenderStates.size(),levelRenderState.blockEntityRenderStates.size());
     }
 }

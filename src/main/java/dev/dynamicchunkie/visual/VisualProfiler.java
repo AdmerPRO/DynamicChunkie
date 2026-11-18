@@ -27,11 +27,12 @@ public final class VisualProfiler {
             String.format(java.util.Locale.ROOT,"Render-thread CPU EMA %.1f ms",perf.cpuMs()),
             "Terrain visible candidates: "+visible+" | extra skipped: "+dev.dynamicchunkie.terrain.TerrainCulling.skipped(),
             "Terrain occluders: "+dev.dynamicchunkie.terrain.TerrainCulling.occluders()+" | cache charged: "+dev.dynamicchunkie.terrain.TerrainCulling.chargedBytes()+" B",
+            "Hot sections: "+dev.dynamicchunkie.sections.HotSoftSections.hotCount()+" | deferred: "+dev.dynamicchunkie.sections.HotSoftSections.pending()+" | scan us: "+dev.dynamicchunkie.sections.HotSoftSections.captureNanos()/1000,
             "Extracted entities / block entities: "+entities+" / "+blocks,
             "GPU timing: "+(Double.isNaN(perf.gpuPercent())?"unavailable":String.format(java.util.Locale.ROOT,"%.0f%%",perf.gpuPercent())),
             "Analysis cache charged: "+manager.cacheBytes()+" bytes (geometry VRAM unknown)",
             "Frame time history: 180 frames / 0-100 ms"};
-        int y=graphics.guiHeight()-164;
+        int y=graphics.guiHeight()-176;
         for(String line:lines) {
             graphics.fill(5,y-1,12+client.font.width(line),y+10,0xB0000000);
             graphics.text(client.font,line,8,y,0xFFFFFFFF,true);y+=12;

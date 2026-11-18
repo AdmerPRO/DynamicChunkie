@@ -24,3 +24,15 @@ The first release of DynamicChunkie introduces the client-side dynamic Render Di
 ### Supported Minecraft versions
 
 26.3, 26.2, 26.1.2, 26.1.1, 26.1, and 1.21.1 through 1.21.11. Use the build for the exact Minecraft version.
+### Development additions on master — Minecraft 26.3 only
+
+- Conservative 16×16×16 Terrain Section Culling for vanilla and the supported Sodium build,
+  with bounded work, block/chunk invalidation and command-cache restoration.
+- Separate adaptive mob, player, item, armor stand and block-entity distance controls.
+- Per-type nearest-first entity limits and category navigation, with optional name/glow protection.
+- Per-type cosmetic particle budgets, importance controls and adaptive cloud quality.
+- A profiler with frame-time history, CPU/GPU timing, render-input counts and cache accounting.
+- Directional room/passage/drop/summit classification, verified cave-exit prediction,
+  and faster downward RD response when flying toward a known obstacle.
+
+Version remains 0.1.0. Other supported Minecraft branches have not received these additions.

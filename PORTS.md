@@ -40,7 +40,7 @@ reservation accounting, teleport/combat recovery and translucent loading bars.
 Normal growth defaults to +2 chunks/s; teleport recovery is +1 chunk/s from the
 configured minimum. See [policy details and limitations](docs/adaptive-controls.md).
 
-48 unit tests pass per target. With Sodium/Mod Menu, 26.3 and 1.21.5–1.21.11
+The baseline 48-unit suite passes per target; master now has additional tests. With Sodium/Mod Menu, 26.3 and 1.21.5–1.21.11
 pass real-world regressions for geometry retention, block updates, entity visibility,
 movement/block breaking during an unfinished reload, and native completion callbacks.
 1.21.1–1.21.4 pass startup checks; their in-world loading/input behavior still requires
@@ -69,3 +69,10 @@ uniform-buffer reservation. 26.2 uses the split `LevelExtractor` renderer API.
 All four builds use Java 25, unobfuscated official names and client-only dependencies.
 Long-flight memory, shaders and visual behavior with arbitrary resource packs still
 require the manual checks documented in each README.
+
+## Additional visual features on master only
+
+Minecraft 26.3 now has the optional features documented in
+[visual controls](docs/visual-controls-26.3.md), with 61 unit tests and graphical
+vanilla/Sodium coverage. No other version branch has been changed for this work.
+The version remains 0.1.0.

@@ -26,7 +26,7 @@ Use the file built for your exact Minecraft version. The branches and artifacts 
 - Shows a translucent progress bar during world/resource loading. During an in-world resource reload, gameplay input can continue when the player and their chunk are ready.
 - Provides an optional Mod Menu settings screen.
 
-The normal renderer and chunk-loading system remain in use. The mod does **not** change Simulation Distance, server simulation or tick behavior, and does not implement terrain Section Culling or a replacement renderer.
+The normal renderer and chunk-loading system remain in use. The mod does **not** change Simulation Distance, server simulation or tick behavior, and does not replace the renderer.
 
 ## Install
 
@@ -56,3 +56,13 @@ Render Distance is changed through Minecraft's validated client option and its n
 The analysis cache and its memory accounting are bounded. The memory budget is a soft reservation estimate for section slots plus a separate limit for analysis results; it is **not** a hard cap on Minecraft/Sodium process memory or GPU VRAM. The game renderer owns geometry allocation and release. GPU utilization is used only when the game's timing data is available.
 
 Environment samples cannot know every distant horizon or cave opening. Unloaded chunks count as blocked. Resource pack reloads and compiling newly visible chunks can still cause frame-time spikes. 
+
+## New visual controls — Minecraft 26.3 only
+
+The master build adds optional conservative Terrain Section Culling, separate entity
+and block-entity distances, nearest-first per-type population limits with categories,
+particle budgets and importance rules, adaptive cloud quality, improved cave/exit/summit
+analysis, and a profiler with frame history and actual extra terrain-skip counters.
+Enable the controls in Mod Menu. These additions are not in the other version ports.
+The terrain culler uses verified fully opaque sections and fails open on uncertain data;
+see the project documentation for its limits and supported renderer combinations.

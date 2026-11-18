@@ -4,7 +4,7 @@ A client-only Fabric mod that adjusts Minecraft's Render Distance using nearby g
 MVP for **Minecraft 26.3**, Java 25, Fabric Loader 0.20.1 or newer, and Fabric API
 0.166.2+26.3. It uses focused client mixins to retain existing render-section storage, with optional
 integration for Sodium 0.9.3-beta.1+mc26.3.
-It has no reflection, replacement renderer, terrain Section Culling or server component. Entity occlusion is described below. Simulation Distance is never read or modified.
+It has no reflection, replacement renderer or server component. Optional conservative terrain section culling and entity occlusion are described below. Simulation Distance is never read or modified.
 
 ## Install and build
 
@@ -29,8 +29,8 @@ Windows: `gradlew.bat build`. Gradle downloads build dependencies on the first r
 The mod creates `config/dynamicchunkie.json` at startup. An example is included at
 [config/dynamicchunkie.example.json](config/dynamicchunkie.example.json).
 For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.3.
-Open **Mods → DynamicChunkie → Configure**. The four pages cover general switches, caves
-and limits, open-terrain profiles, and timing/stability. Save validates and applies settings
+Open **Mods → DynamicChunkie → Configure**. The pages cover environment targets, timing, performance/cache budgets, teleport/loading,
+entity distances and category limits, particle types/priorities, terrain culling and the profiler. Save validates and applies settings
 immediately and writes the JSON file. Cancel/Escape discards edits; Defaults resets the
 draft until Save. English and Polish labels are included. No Cloth Config is required.
 Crash recovery fields are managed internally and are not exposed in the UI.
@@ -153,7 +153,7 @@ tracking up to the configured maximum when a world/renderer initializes. It keep
 The engine's normal visibility traversal receives the current distance, not the reserved
 capacity. Its normal asynchronous graph update retains the previous graph until the new
 one is ready. This is reuse of Minecraft's rendering machinery, not a custom renderer or
-a new Section/Occlusion Culling implementation.
+a terrain culler; the separate optional culling module is documented below.
 
 Three mixins are necessary because Fabric has no supported event for avoiding this reset:
 
@@ -199,7 +199,7 @@ can still cause frame-time spikes; this change does not promise zero lag.
 
 ## Validation and manual acceptance checks
 
-48 unit tests cover environment scoring, altitude gating, profile interpolation,
+61 unit tests on master cover environment scoring, altitude gating, profile interpolation,
 validated settings, stable targets, exact chunk DDA, adaptive performance/cache policies
 and teleport/combat recovery. Graphical regressions check near-mesh reuse, block updates,
 genuine reloads, entity visibility and movement/block breaking during resource reloads.
@@ -250,7 +250,7 @@ Elytra flight and compare cache on/off. Repeat on a remote server.
 - Unknown chunks are conservatively blocked. Chunk arrival can temporarily lower targets,
   especially directly after joining or teleporting.
 - Profile values are heuristics, not measured visibility guarantees. There are no
-  custom predictive chunk requests, Section Culling, terrain Occlusion Culling, or custom rendering.
+  custom predictive chunk requests or replacement rendering.
 - Genuine renderer reloads and arrival/compilation of new chunks can still cause stutter.
   Retaining near geometry avoids the RD-triggered full rebuild; it does not remove loading costs.
 - Other mods controlling the same option can conflict. Only the exact Sodium version listed
@@ -316,3 +316,9 @@ Separate branches and artifacts are available for **26.2, 26.1.2, 26.1.1 and 26.
 version; dependency selections and validation are listed in [PORTS.md](PORTS.md).
 
 Development on master (26.3): [optional visual controls and current limitations](docs/visual-controls-26.3.md). These additions have not been ported to the other version branches.
+
+Master now includes optional Terrain Section Culling, adaptive entity distances and
+per-type limits, particle budgets/priorities, cloud quality, predictive cave/summit
+analysis and a performance profiler. See [visual controls](docs/visual-controls-26.3.md)
+for configuration, renderer integration and conservative limits. These additions
+are **26.3 only** until the other version ports are explicitly updated.

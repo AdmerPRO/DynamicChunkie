@@ -17,15 +17,26 @@ public final class EnvironmentAnalyzer {
         if (c.enableElytraOptimization && flight)
             open = Math.min(1, open + 0.10 * Math.min(1, speed / 30) * r.horizontal() * r.forward());
         double predicted=0;
-        if (c.enablePrediction && flight && speed>=8 && r.horizontal()>=.55 && r.forward()>=.65) {
+        boolean exitAhead=false;
+        if (c.enablePrediction && speed>=.8) {
             predicted=rays.preview(client.level,p,c.predictionLookaheadMs);
+            exitAhead=c.enableSkyDetection && !sky && rays.previewSky() && predicted>.55;
             double alignment=p.getDeltaMovement().normalize().dot(p.getLookAngle());
-            open=Math.min(1,open+dev.dynamicchunkie.adaptive.AnalysisPolicy.predictionBoost(
+            if(flight)open=Math.min(1,open+dev.dynamicchunkie.adaptive.AnalysisPolicy.predictionBoost(
                     speed,r.horizontal(),r.forward(),r.gaze(),predicted,alignment));
+            // Only a loaded, unobstructed future position can predict a sky opening.
+            if(exitAhead)open=Math.min(1,open+.08*predicted);
+            else if(sky && rays.previewSky() && predicted>.7 && predicted>r.horizontal()+.15)
+                open=Math.min(1,open+.06*(predicted-r.horizontal()));
+            if(flight && speed>8 && r.forward()<.15)open=Math.max(0,open-.12);
         }
-        String name = open < .13 ? "Narrow Tunnel" : open < .30 ? "Small Cave" :
-                !sky ? "Large Cave / Covered Area" : open < .78 ? "Surface" :
-                altitude < 160 ? "Mountain / Open Area" : "High Open Sky";
+        double longAxis=Math.max(Math.min(r.front(),r.back()),Math.min(r.left(),r.right()));
+        double shortAxis=Math.min(Math.max(r.front(),r.back()),Math.max(r.left(),r.right()));
+        String name = exitAhead ? "Cave Exit Ahead" : r.down()>.8 && r.horizontal()>.35 ? "Chasm / Open Drop" :
+                !sky && longAxis>.45 && shortAxis<.25 ? "Narrow Passage" :
+                open<.13 ? "Narrow Tunnel" : !sky && r.horizontal()<.35 && r.up()<.4 ? "Enclosed Room" :
+                !sky ? "Large Cave / Covered Area" : r.horizontal()>.7 && r.up()>.8 && altitude>120 ? "Open Summit" :
+                open<.78 ? "Surface" : "High Open Sky";
         return new EnvironmentScore(open, r.average(), r.horizontal(), r.vertical(), r.clear(),
                 sky, altitude, flight, speed, r.forward(), name, r.front(),r.back(),r.left(),r.right(),r.gaze(),predicted);
     }

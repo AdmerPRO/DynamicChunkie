@@ -92,6 +92,8 @@ public final class DynamicDistanceManager {
                     config.cacheMemoryLimitMb*1024L*1024);
             if (cached==null) analysisMs=analysisMs*.8+(System.nanoTime()-begin)/1e6*.2;
             smoothed=Double.isNaN(smoothed)?score.openness():smoothed+config.smoothingFactor*(score.openness()-smoothed);
+            if(config.enablePrediction && score.elytra() && score.speed()>8 && score.forward()<.15)
+                smoothed=Math.min(smoothed,score.openness());
             lastAnalysis=now;lastYaw=player.getYRot();
         }
         int candidate=EnvironmentAnalyzer.target(score,smoothed,config);
@@ -140,6 +142,7 @@ public final class DynamicDistanceManager {
     public long analysisAgeMs() {return (System.nanoTime()-lastAnalysis)/1_000_000;}
     public int analysisIntervalMs() {return intervalMs;}
     public long cacheHits() {return cache.hits();}
+    public long cacheBytes() {return cache.chargedBytes();}
     public int cacheEntries() {return cache.size();}
     public PerformanceBudget performance() {return performance;}
     public boolean recovering() {return transitions.recovering();}

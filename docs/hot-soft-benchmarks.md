@@ -1,5 +1,7 @@
 # Hot/soft automated benchmarks — Minecraft 26.3
 
+Recorded example: [2026-11-19 results and limitations](benchmarks/2026-11-19-results.md).
+
 Use JDK 25 and a graphical session. Tests create and delete a disposable flat
 world; they do not open your saves. Benchmark fixtures belong to the separate
 `gametest` source set and are not distributed in the mod JAR.
@@ -52,6 +54,8 @@ Reports in `build/benchmarks/`:
 - CSV: raw per-frame intervals, tagged by scene, repetition and OFF/ON state.
 - The summary script reports paired FPS changes and p95 frame times; a positive
   FPS change is an observed result for that run, not a guaranteed improvement.
+  More than 2x variation between repetitions marks a scene UNSTABLE and suppresses
+  its percentage gain; this guard does not replace a statistical confidence analysis.
 
 Intervals use `System.nanoTime` at completed Minecraft frame boundaries. The
 recorder allocates its bounded 65536-entry buffer once per phase; no frame writes

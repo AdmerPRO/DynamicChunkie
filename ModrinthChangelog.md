@@ -36,3 +36,9 @@ The first release of DynamicChunkie introduces the client-side dynamic Render Di
   and faster downward RD response when flying toward a known obstacle.
 
 Version remains 0.1.0. Other supported Minecraft branches have not received these additions.
+
+- Experimental hot/soft section working set: 26-neighbour diagonal warm buffer,
+  conservative camera filtering and bounded cold rebuild deferral. Native meshes
+  stay cached; this feature does not evict geometry or promise RAM/VRAM savings.
+- Automated hot/soft OFF/ON benchmarks for vanilla and supported Sodium, with
+  frame-time JSON/CSV reports, repeat ordering and a Python comparison script.

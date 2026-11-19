@@ -322,3 +322,32 @@ per-type limits, particle budgets/priorities, cloud quality, predictive cave/sum
 analysis and a performance profiler. See [visual controls](docs/visual-controls-26.3.md)
 for configuration, renderer integration and conservative limits. These additions
 are **26.3 only** until the other version ports are explicitly updated.
+
+## Hot / soft subregions (26.3 experimental)
+
+Enable **Hot / soft sections** on the terrain page in Mod Menu, or set
+`enableHotSoftSections: true`. It is off by default. Each section is Minecraft's
+native 16×16×16 block volume; this does not add a replacement renderer.
+
+- **Hot:** native visibility candidates intersecting the current camera frustum,
+  with a two-block safety margin. The camera's own section is always hot.
+- **Soft:** all 26 touching neighbours of hot sections, including diagonals. These
+  stay warm for rebuilding; being soft alone does not force offscreen geometry to draw.
+- **Cold:** other sections. Existing geometry stays cached. Only nonurgent
+  rebuilds of already built, offscreen geometry may be deferred. Initial meshes,
+  visible sections and important updates continue through the native pipeline.
+
+The filter works in 3D when looking down during flight. Vanilla and the pinned
+Sodium 0.9.3-beta.1+mc26.3 are supported. Iris or an unknown Sodium version disables
+this extra filter. Snapshots exceeding `hotSoftScanBudgetMicros` (default 1500,
+validated 250–10000) fall back to native visibility. The working set is bounded
+at 32768 candidates and 8192 deferred coordinates. Camera-visible deferred work
+is replayed first; a rotating queue admits at most 128 rebuilds per extraction.
+Disabling drains pending work; disconnect discards the old world's queue.
+Sodium draw commands refresh on membership changes without deleting chunk meshes.
+
+Minecraft already culls sections. Extra FPS depends on the scene and may be zero
+or negative when scan/filter overhead outweighs avoided work. This version does
+**not** evict cold meshes or client chunks, so it cannot promise a RAM/VRAM saving.
+The profiler shows hot membership, pending rebuilds and scan time. See
+[automated benchmarks](docs/hot-soft-benchmarks.md) for reproducible A/B comparisons.

@@ -66,3 +66,10 @@ analysis, and a profiler with frame history and actual extra terrain-skip counte
 Enable the controls in Mod Menu. These additions are not in the other version ports.
 The terrain culler uses verified fully opaque sections and fails open on uncertain data;
 see the project documentation for its limits and supported renderer combinations.
+
+An additional experimental hot/soft section mode keeps visible 16×16×16 sections
+and a one-section neighbour buffer warm, including diagonal neighbours. It can
+defer safe offscreen rebuilds while retaining existing meshes. It is off by
+default and currently available only on 26.3/master. Automated OFF/ON benchmarks
+record frame times and extra draw skips; neither a fixed FPS improvement nor
+RAM/VRAM savings is guaranteed. See [benchmark instructions](docs/hot-soft-benchmarks.md).

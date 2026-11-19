@@ -9,7 +9,9 @@
       "dev.dynamicchunkie.EntityCullingGameTest",
       "dev.dynamicchunkie.TransparentLoadingGameTest",
       "dev.dynamicchunkie.VisualPoliciesGameTest",
-      "dev.dynamicchunkie.TerrainCullingGameTest"
+      "dev.dynamicchunkie.TerrainCullingGameTest",
+      "dev.dynamicchunkie.HotSoftGameTest",
+      "dev.dynamicchunkie.benchmark.HotSoftBenchmark"
     ]
   }
 }

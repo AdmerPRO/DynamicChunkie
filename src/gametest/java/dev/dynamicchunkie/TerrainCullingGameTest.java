@@ -25,10 +25,9 @@ public final class TerrainCullingGameTest implements FabricClientGameTest {
             var polls=new java.util.concurrent.atomic.AtomicInteger();
             context.waitFor(client->{
                 if(polls.incrementAndGet()%100==0)DynamicChunkie.LOG.info("Terrain discovery: {}",TerrainCulling.status());
-                return TerrainCulling.occluders()>0;
+                return TerrainCulling.occluders()>0 && TerrainCulling.hide(64,96,0);
             },600);
             context.runOnClient(client->{
-                if(!TerrainCulling.hide(64,96,0))throw new AssertionError("Full opaque section did not occlude target");
                 if(TerrainCulling.hide(0,96,0))throw new AssertionError("Camera section was culled");
             });
             context.waitTicks(10);

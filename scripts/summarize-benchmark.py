@@ -17,6 +17,8 @@ for path in args.reports:
         print('SMOKE TEST: these short samples cannot establish a performance gain.')
     if not report.get('equalCandidateTelemetry', False):
         print('Legacy report: unequal candidate telemetry; rerun before comparing FPS.')
+    if not report.get('throttleGuard', False):
+        print('Legacy report: no AFK/throttle guard; rerun before drawing performance conclusions.')
     grouped = defaultdict(dict)
     for phase in report['phases']:
         grouped[(phase['scene'], phase['repeat'])][phase['hotSoft']] = phase['measurement']

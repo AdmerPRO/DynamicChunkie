@@ -14,7 +14,10 @@ The default is 100 warmup ticks, 200 measured ticks and two repetitions of each
 scene. At normal tick speed these are roughly five and ten seconds per phase.
 OFF/ON order alternates AB then BA. Only hot/soft changes between phases: RD is
 fixed at eight, other adaptive visual controls are off, VSync is off and the
-framerate option is set to 260 (the vanilla unlimited option). Simulation
+framerate option is set to 260 (the vanilla unlimited option). AFK throttling is
+disabled using the native MINIMIZED inactivity option; each test tick rejects an
+active framerate throttle. Keep the window unminimized. The original inactivity
+and pause-on-focus-loss settings are restored afterwards. Simulation
 Distance is asserted unchanged and the original mod/video options are restored.
 Do not run two graphical suites simultaneously or change window focus/settings
 mid-run. Close other workloads and repeat the full process to assess variance.

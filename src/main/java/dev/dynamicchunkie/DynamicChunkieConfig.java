@@ -9,6 +9,9 @@ import java.io.IOException;
 public final class DynamicChunkieConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
+    public boolean enableColdGeometryEviction;
+    public int coldGeometryGraceMs = 15000;
+    public boolean enableAsyncSelection;
     public boolean diagnosticsEnabled=false, enableJfrEvents=false, enableAdaptiveModuleBudgets=true;
     public int hudRefreshMs=250, cpuSampleIntervalMs=250, sharedAnalysisBudgetMicros=2500;
     public int analysisMetadataLimitKiB=256, entityMetadataLimitKiB=1024, coldMetadataLimitKiB=1024;
@@ -59,6 +62,7 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        coldGeometryGraceMs=clamp(coldGeometryGraceMs,1000,120000);
         hudRefreshMs=clamp(hudRefreshMs,200,1000);cpuSampleIntervalMs=clamp(cpuSampleIntervalMs,50,1000);
         sharedAnalysisBudgetMicros=clamp(sharedAnalysisBudgetMicros,500,20000);
         analysisMetadataLimitKiB=clamp(analysisMetadataLimitKiB,16,2048);
@@ -113,6 +117,9 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        enableColdGeometryEviction=other.enableColdGeometryEviction;
+        coldGeometryGraceMs=other.coldGeometryGraceMs;
+        enableAsyncSelection=other.enableAsyncSelection;
         diagnosticsEnabled=other.diagnosticsEnabled;enableJfrEvents=other.enableJfrEvents;enableAdaptiveModuleBudgets=other.enableAdaptiveModuleBudgets;
         hudRefreshMs=other.hudRefreshMs;cpuSampleIntervalMs=other.cpuSampleIntervalMs;sharedAnalysisBudgetMicros=other.sharedAnalysisBudgetMicros;
         analysisMetadataLimitKiB=other.analysisMetadataLimitKiB;entityMetadataLimitKiB=other.entityMetadataLimitKiB;coldMetadataLimitKiB=other.coldMetadataLimitKiB;

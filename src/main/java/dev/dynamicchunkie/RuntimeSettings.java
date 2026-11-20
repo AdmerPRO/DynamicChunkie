@@ -2,6 +2,9 @@ package dev.dynamicchunkie;
 
 /** Immutable settings published only after successful validation and persistence. Recovery state stays in the RD owner. */
 public final class RuntimeSettings {
+    public final boolean enableColdGeometryEviction;
+    public final int coldGeometryGraceMs;
+    public final boolean enableAsyncSelection;
     public final boolean diagnosticsEnabled;
     public final boolean enableJfrEvents;
     public final boolean enableAdaptiveModuleBudgets;
@@ -75,6 +78,9 @@ public final class RuntimeSettings {
     public final java.util.Map<String,Integer> particleTypeBudgets;
     public final java.util.Set<String> importantParticleTypes;
     private RuntimeSettings(DynamicChunkieConfig source) {
+        enableColdGeometryEviction=source.enableColdGeometryEviction;
+        coldGeometryGraceMs=source.coldGeometryGraceMs;
+        enableAsyncSelection=source.enableAsyncSelection;
         diagnosticsEnabled=source.diagnosticsEnabled;
         enableJfrEvents=source.enableJfrEvents;
         enableAdaptiveModuleBudgets=source.enableAdaptiveModuleBudgets;

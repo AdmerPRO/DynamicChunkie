@@ -9,6 +9,9 @@ import java.io.IOException;
 public final class DynamicChunkieConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path path() { return FabricLoader.getInstance().getConfigDir().resolve("dynamicchunkie.json"); }
+    public boolean diagnosticsEnabled=false, enableJfrEvents=false, enableAdaptiveModuleBudgets=true;
+    public int hudRefreshMs=250, cpuSampleIntervalMs=250, sharedAnalysisBudgetMicros=2500;
+    public int analysisMetadataLimitKiB=256, entityMetadataLimitKiB=1024, coldMetadataLimitKiB=1024;
     public boolean enableHotSoftSections=false;
     public int hotSoftScanBudgetMicros=1500;
     public boolean protectImportantEntities=true;
@@ -56,6 +59,10 @@ public final class DynamicChunkieConfig {
         }
     }
     public void validate() {
+        hudRefreshMs=clamp(hudRefreshMs,200,1000);cpuSampleIntervalMs=clamp(cpuSampleIntervalMs,50,1000);
+        sharedAnalysisBudgetMicros=clamp(sharedAnalysisBudgetMicros,500,20000);
+        analysisMetadataLimitKiB=clamp(analysisMetadataLimitKiB,16,2048);
+        entityMetadataLimitKiB=clamp(entityMetadataLimitKiB,64,16384);coldMetadataLimitKiB=clamp(coldMetadataLimitKiB,64,16384);
         hotSoftScanBudgetMicros=clamp(hotSoftScanBudgetMicros,250,10000);
         terrainChecksPerFrame=clamp(terrainChecksPerFrame,8,1024);
         particleSpawnBudget=clamp(particleSpawnBudget,1,10000);
@@ -106,6 +113,9 @@ public final class DynamicChunkieConfig {
         return result;
     }
     public void copySettingsFrom(DynamicChunkieConfig other) {
+        diagnosticsEnabled=other.diagnosticsEnabled;enableJfrEvents=other.enableJfrEvents;enableAdaptiveModuleBudgets=other.enableAdaptiveModuleBudgets;
+        hudRefreshMs=other.hudRefreshMs;cpuSampleIntervalMs=other.cpuSampleIntervalMs;sharedAnalysisBudgetMicros=other.sharedAnalysisBudgetMicros;
+        analysisMetadataLimitKiB=other.analysisMetadataLimitKiB;entityMetadataLimitKiB=other.entityMetadataLimitKiB;coldMetadataLimitKiB=other.coldMetadataLimitKiB;
         enableHotSoftSections=other.enableHotSoftSections;hotSoftScanBudgetMicros=other.hotSoftScanBudgetMicros;
         protectImportantEntities=other.protectImportantEntities;
         enableTerrainSectionCulling=other.enableTerrainSectionCulling;terrainChecksPerFrame=other.terrainChecksPerFrame;
@@ -176,6 +186,6 @@ public final class DynamicChunkieConfig {
             try { Files.move(temp, PATH, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE); }
             catch (AtomicMoveNotSupportedException e) { Files.move(temp, PATH, StandardCopyOption.REPLACE_EXISTING); }
             return true;
-        } catch (IOException e) { DynamicChunkie.LOG.error("Cannot save configuration", e); return false; }
+        } catch (IOException e) { dev.dynamicchunkie.diagnostics.GroupedLog.error("config-write","Cannot save configuration", e); return false; }
     }
 }

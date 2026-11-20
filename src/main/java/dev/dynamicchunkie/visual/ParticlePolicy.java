@@ -17,7 +17,7 @@ public final class ParticlePolicy {
 
     public static void tick(Minecraft client) {
         invalidate();
-        var c = DynamicChunkie.configOrNull();
+        var c = DynamicChunkie.settings();
         if (c == null || !c.enabled || !c.enableAdaptiveParticles || client.level == null || client.particleEngine == null) return;
         // Native API exposes the count as text. Parsing is confined to enabled client ticks.
         try { active = Integer.parseInt(client.particleEngine.countParticles()); }
@@ -28,7 +28,7 @@ public final class ParticlePolicy {
     }
 
     public static boolean reject(ParticleOptions options, double x, double y, double z) {
-        var c = DynamicChunkie.configOrNull();
+        var c = DynamicChunkie.settings();
         var client = Minecraft.getInstance();
         if (c == null || !c.enabled || !c.enableAdaptiveParticles || client.level == null) return false;
         var type = options.getType();

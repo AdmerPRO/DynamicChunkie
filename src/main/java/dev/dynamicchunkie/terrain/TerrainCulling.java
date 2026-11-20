@@ -1,5 +1,8 @@
 package dev.dynamicchunkie.terrain;
 
+import dev.dynamicchunkie.runtime.WorkCoordinator;
+import dev.dynamicchunkie.runtime.AnalysisScheduler;
+
 import dev.dynamicchunkie.*;
 import it.unimi.dsi.fastutil.longs.*;
 import java.util.*;
@@ -10,7 +13,6 @@ import net.minecraft.world.phys.Vec3;
 /** Palette-only discovery on the client tick; render hooks only consult verified immutable boxes. */
 public final class TerrainCulling {
     private record Box(int x,int y,int z) {}
-    private static final boolean SHADERS=net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris");
     private static final int[][] OFFSETS=offsets();
     private static final List<Box> discovered=new ArrayList<>();
     private static final OpaqueCounter OPAQUE=new OpaqueCounter();
@@ -26,8 +28,9 @@ public final class TerrainCulling {
     private static final LongOpenHashSet countedRegions=new LongOpenHashSet();
     private static int candidates,lastCandidates;
     private static Object world;
+    private static long observedOcclusionSkips;
     private static long revision=-1,changedAt,generation,spentNanos;
-    private static boolean incomplete,wasActive;
+    private static boolean incomplete,wasActive,meshesReady;
     private static int sx,sy,sz,cursor,checks,hookCalls,lastSkipped,lastHooks;
     private static double cx=Double.NaN,cy,cz;
     private static volatile List<Box> boxes=List.of();
@@ -42,8 +45,8 @@ public final class TerrainCulling {
         boxes=List.of();discovered.clear();decisions.clear();cursor=0;revision=-1;generation++;changedAt=System.nanoTime();
     }
     public static void tick(Minecraft client) {
-        var c=DynamicChunkie.configOrNull();
-        if(c==null || !c.enabled || !c.enableTerrainSectionCulling || SHADERS || RenderCache.sodiumPresent() && !RenderCache.sodiumSupported() || client.level==null || client.player==null || client.player.isSpectator()) {
+        var c=DynamicChunkie.settings();
+        if(c==null || !c.enabled || !c.enableTerrainSectionCulling || !dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal() || client.level==null || client.player==null || client.player.isSpectator()) {
             if(world!=null)invalidate();world=null;return;
         }
         var camera=client.gameRenderer.mainCamera().position();
@@ -55,7 +58,10 @@ public final class TerrainCulling {
         // Never use newly placed blocks as occluders before their native meshes are ready.
         if(!client.levelRenderer.hasRenderedAllSections()) {if(!boxes.isEmpty()) {boxes=List.of();decisions.clear();generation++;}return;}
         if(System.nanoTime()-changedAt<1_000_000_000L)return;
-        long deadline=System.nanoTime()+1_000_000L;
+        if (cursor >= OFFSETS.length || discovered.size() >= 128 ||
+                !WorkCoordinator.admit(AnalysisScheduler.Module.TERRAIN_DISCOVERY, 50_000_000L, false)) return;
+        long started = System.nanoTime();
+        long deadline=WorkCoordinator.deadline(1_000_000L);
         for(int n=0;n<16 && cursor<OFFSETS.length && discovered.size()<128 && System.nanoTime()<deadline;n++) {
             int[] offset=OFFSETS[cursor++];int bx=sx+offset[0],by=sy+offset[1],bz=sz+offset[2];
             if(!client.level.getChunkSource().hasChunk(bx,bz))continue;
@@ -68,17 +74,25 @@ public final class TerrainCulling {
             OPAQUE.solid=true;data.getStates().count(OPAQUE);
             if(OPAQUE.solid)discovered.add(new Box(bx*16,by*16,bz*16));
         }
+        WorkCoordinator.complete(AnalysisScheduler.Module.TERRAIN_DISCOVERY, started, observedOcclusionSkips);
+        observedOcclusionSkips=0;
         if(boxes.size()!=discovered.size()) {boxes=List.copyOf(discovered);decisions.clear();generation++;}
     }
     public static void prepareForDraw() {
         var client=Minecraft.getInstance();
         if(client.level==null)return;
+        var changes = ((EnvironmentRevision)client.level).dynamicchunkie$changes();
+        boolean ready = client.levelRenderer.hasRenderedAllSections();
+        if (ready != meshesReady) {
+            changes.record(dev.dynamicchunkie.render.RenderChanges.Kind.MESH_READINESS);
+            meshesReady = ready;
+        }
         var camera=client.gameRenderer.mainCamera().position();
         if(camera.x!=cx || camera.y!=cy || camera.z!=cz) {
+            changes.record(dev.dynamicchunkie.render.RenderChanges.Kind.CAMERA);
             decisions.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
         }
-        if((world!=client.level || ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision ||
-                !client.levelRenderer.hasRenderedAllSections()) && !boxes.isEmpty()) {
+        if((world!=client.level || ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision || !ready) && !boxes.isEmpty()) {
             boxes=List.of();decisions.clear();generation++;
         }
         boolean enabled=active();
@@ -98,7 +112,7 @@ public final class TerrainCulling {
     }
     public static void endFrame() {lastSkipped=skipped.size();lastHooks=hookCalls;lastCandidates=candidates;}
     public static boolean metricsEnabled() {
-        var c=DynamicChunkie.configOrNull();return dev.dynamicchunkie.benchmark.FrameCapture.recording() || c!=null && (c.profilerOverlay || c.enabled && (c.enableTerrainSectionCulling || c.enableHotSoftSections));
+        var c=DynamicChunkie.settings();return dev.dynamicchunkie.benchmark.FrameCapture.recording() || c!=null && (c.profilerOverlay || c.enabled && (c.enableTerrainSectionCulling || c.enableHotSoftSections));
     }
     public static void candidate(int x,int y,int z) {
         if(metricsEnabled() && candidateSections.add(SectionPos.asLong(x>>4,y>>4,z>>4)))candidates++;
@@ -109,13 +123,13 @@ public final class TerrainCulling {
     public static int candidates() {return lastCandidates;}
     public static void hook() {hookCalls++;}
     public static boolean active() {
-        var c=DynamicChunkie.configOrNull();
+        var c=DynamicChunkie.settings();
         return c!=null && c.enabled && c.enableTerrainSectionCulling && !boxes.isEmpty() &&
-                !SHADERS &&
+                dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal() &&
                 (Minecraft.getInstance().player==null || !Minecraft.getInstance().player.isSpectator());
     }
     public static boolean hide(int x,int y,int z) {
-        var client=Minecraft.getInstance();var c=DynamicChunkie.configOrNull();
+        var client=Minecraft.getInstance();var c=DynamicChunkie.settings();
         if(!client.isSameThread() || !active() || c==null ||
                 boxes.isEmpty() || client.level==null || client.level!=world ||
                 ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision)return false;
@@ -132,7 +146,7 @@ public final class TerrainCulling {
             cached=(byte)(hidden?2:1);
             decisions.put(key,cached);spentNanos+=System.nanoTime()-started;
         }
-        if(cached==2) {skipped.add(key);return true;}
+        if(cached==2) {if (skipped.add(key)) observedOcclusionSkips++;return true;}
         return false;
     }
     public static int skipped() {return lastSkipped;}

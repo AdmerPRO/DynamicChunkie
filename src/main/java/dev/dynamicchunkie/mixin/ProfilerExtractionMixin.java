@@ -9,7 +9,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 abstract class ProfilerExtractionMixin {
     @Shadow @Final private LevelRenderState levelRenderState;
     @Inject(method="allChanged",at=@At("HEAD"))
-    private void dynamicchunkie$reset(CallbackInfo ci) {dev.dynamicchunkie.terrain.TerrainCulling.invalidate();}
+    private void dynamicchunkie$reset(CallbackInfo ci) {
+        var client = net.minecraft.client.Minecraft.getInstance();
+        if (client.level instanceof dev.dynamicchunkie.EnvironmentRevision revision)
+            revision.dynamicchunkie$changes().record(dev.dynamicchunkie.render.RenderChanges.Kind.RENDERER_RELOAD);
+        dev.dynamicchunkie.terrain.TerrainCulling.invalidate();
+    }
     @Inject(method="extract",at=@At("RETURN"))
     private void dynamicchunkie$counts(CallbackInfo ci) {
         dev.dynamicchunkie.terrain.TerrainCulling.prepareForDraw();

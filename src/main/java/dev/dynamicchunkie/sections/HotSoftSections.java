@@ -15,12 +15,10 @@ public final class HotSoftSections {
     private static long revision,deadline,captureNanos,deferredTotal,replayedTotal,fallbackFrames;
     private static int visited,peakDeferred;
     private static boolean ready,replaying;
-    private static final boolean IRIS=net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris");
     private HotSoftSections() {}
     private static boolean enabled() {
-        var c=DynamicChunkie.configOrNull();
-        return c!=null && c.enabled && c.enableHotSoftSections && !IRIS &&
-                (!RenderCache.sodiumPresent() || RenderCache.sodiumSupported());
+        var c=DynamicChunkie.settings();
+        return c!=null && c.enabled && c.enableHotSoftSections && dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal();
     }
     public static void capture() {
         var client=Minecraft.getInstance();
@@ -32,7 +30,7 @@ public final class HotSoftSections {
             if(ready){ready=false;current.clear();working.clear();TerrainCulling.invalidateDrawBatches();}
             captureNanos=0;replay(true);return;
         }
-        long start=System.nanoTime();deadline=start+DynamicChunkie.config().hotSoftScanBudgetMicros*1000L;
+        long start=System.nanoTime();deadline=start+DynamicChunkie.settings().hotSoftScanBudgetMicros*1000L;
         working.clear();visited=0;
         boolean complete=SectionBackends.current().collect(COLLECTOR);
         var camera=client.gameRenderer.mainCamera().position();
@@ -70,7 +68,7 @@ public final class HotSoftSections {
         var client=Minecraft.getInstance();
         if(!client.isSameThread())return false;
         if(important)deferred.remove(HotSoftGrid.key(x,y,z));
-        if(replaying || important || !active() || deferred.size()>=8192 ||
+        if(replaying || important || !active() || deferred.size()>=Math.min(8192, DynamicChunkie.settings().coldMetadataLimitKiB * 16) ||
                 current.state(x,y,z)!=HotSoftGrid.State.COLD || inView(x*16,y*16,z*16))return false;
         boolean built=SectionBackends.current().hasBuiltMesh(x,y,z);
         if(!built)return false;
@@ -111,7 +109,12 @@ public final class HotSoftSections {
             replayedTotal++;
         }finally{replaying=false;}
     }
-    public static void clear(){world=null;ready=false;current.clear();working.clear();deferred.clear();captureNanos=0;}
+    public static void unload(net.minecraft.client.multiplayer.ClientLevel level, int x, int z) {
+        if (level != world || deferred.isEmpty()) return;
+        for (int y = level.getMinSectionY(); y <= level.getMaxSectionY(); y++)
+            deferred.remove(HotSoftGrid.key(x, y, z));
+    }
+    public static void clear(){world=null;ready=false;current=new HotSoftGrid();working=new HotSoftGrid();deferred.clear();deferred.trim();peakDeferred=0;captureNanos=0;}
     public static int hotCount(){return ready?current.hotCount():0;}
     public static int logicalSoftCount(){return ready?current.softCount():0;}
     public static HotSoftGrid.State state(int x,int y,int z){return current.state(x,y,z);}

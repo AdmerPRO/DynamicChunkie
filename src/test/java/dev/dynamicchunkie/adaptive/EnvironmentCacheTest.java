@@ -28,4 +28,13 @@ class EnvironmentCacheTest {
         assertNotNull(c.get(near,5,1,1000));
         assertNull(c.get(new EnvironmentCache.Key(10000,0,0,0,0),5,1,1000));
     }
+    @Test void maintenanceIsBoundedAndUnloadHandlesNegativeCoordinates() {
+        var cache = new EnvironmentCache();
+        for (int i = -3; i <= 3; i++)
+            cache.put(new EnvironmentCache.Key(i,0,0,0,0),result(),0,1,128,128*1024);
+        cache.removeChunk(-1,0);
+        assertEquals(4, cache.size());
+        assertEquals(2, cache.expire(2_000_000,1,2));
+        assertEquals(2, cache.size());
+    }
 }

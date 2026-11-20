@@ -1,5 +1,8 @@
 package dev.dynamicchunkie.culling;
 
+import dev.dynamicchunkie.runtime.WorkCoordinator;
+import dev.dynamicchunkie.runtime.AnalysisScheduler;
+
 import java.util.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -26,7 +29,7 @@ public final class EntityCulling {
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private final VoxelOcclusion.Blocks blocks = this::blockAt;
     private net.minecraft.client.multiplayer.ClientLevel world;
-    private long snapshotAt;
+    private long snapshotAt, observedSkips;
     private static final class State {
         Vec3 camera, position;
         AABB box;
@@ -35,17 +38,23 @@ public final class EntityCulling {
     }
     public EntityCulling(DynamicChunkieConfig config) { this.config = config; }
     public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; snapshotAt = 0; }
+    public void forget(Entity entity) {
+        if (scheduled.remove(entity)) queue.remove(entity);
+        states.remove(entity);
+    }
+
     public boolean enabled() { return config.enabled && config.enableEntityCulling && !externalCuller; }
 
     public void tick(Minecraft client) {
         if (!enabled() || client.level == null || client.player == null) { clear(); return; }
         if (world != client.level) { clear(); world = client.level; }
+        if (!WorkCoordinator.admit(AnalysisScheduler.Module.ENTITY_OCCLUSION, 50_000_000L, false)) return;
         long now = System.nanoTime();
         if (now - snapshotAt > 500_000_000L || queue.isEmpty()) {
             queue.clear();scheduled.clear();
             for (Entity entity : world.entitiesForRendering()) {
                 if (candidate(entity, client)) {queue.addLast(entity);scheduled.add(entity);}
-                if (queue.size() >= 2048) break;
+                if (queue.size() >= Math.min(2048, config.entityMetadataLimitKiB * 4)) break;
             }
             states.keySet().removeIf(entity -> !scheduled.contains(entity));
             snapshotAt = now;
@@ -55,13 +64,15 @@ public final class EntityCulling {
         if (config.enableHardwareAdaptive && dev.dynamicchunkie.DynamicChunkie.distanceManager().performance().cpuPressure())
             budget=Math.max(1,budget/2);
         int count = Math.min(budget, queue.size());
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count && WorkCoordinator.available(); i++) {
             Entity entity = queue.removeFirst();
             if (!entity.isRemoved()) {
                 queue.addLast(entity);
                 sample(entity, camera, now);
             } else states.remove(entity);
         }
+        WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_OCCLUSION, now, observedSkips);
+        observedSkips=0;
     }
 
     private boolean candidate(Entity entity, Minecraft client) {
@@ -107,6 +118,8 @@ public final class EntityCulling {
         State state = states.get(entity);
         if (state == null || state.blockedSamples < 2 || System.nanoTime() - state.checkedAt > MAX_AGE) return false;
         if (!state.box.equals(entity.getBoundingBox())) return false;
-        return state.camera.distanceToSqr(cameraX, cameraY, cameraZ) <= .015625;
+        if (state.camera.distanceToSqr(cameraX, cameraY, cameraZ) > .015625) return false;
+        observedSkips++;
+        return true;
     }
 }

@@ -6,12 +6,15 @@ public final class EnvironmentAnalyzer {
     private static final double[] SCORE_KNOTS={0,.13,.30,.65,.82,1};
     private final RaycastAnalyzer rays = new RaycastAnalyzer();
     public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig draft) {
-        return analyze(client, RuntimeSettings.capture(draft));
+        return evaluate(client, RuntimeSettings.capture(draft), new RaycastAnalyzer().sample(client.level,client.player,0,Long.MAX_VALUE));
     }
 
-    public EnvironmentScore analyze(Minecraft client, RuntimeSettings c) {
+    public RaycastAnalyzer.Sample sample(Minecraft client, long revision, long deadline) {
+        return rays.sample(client.level,client.player,revision,deadline);
+    }
+    public void reset() { rays.reset(); }
+    public EnvironmentScore evaluate(Minecraft client, RuntimeSettings c, RaycastAnalyzer.Sample r) {
         var p = client.player;
-        var r = rays.sample(client.level, p);
         boolean sky = c.enableSkyDetection && client.level.canSeeSky(p.blockPosition());
         double altitude = p.getY();
         double directional = c.enableDirectionalVisibility ?
@@ -24,7 +27,9 @@ public final class EnvironmentAnalyzer {
         double predicted=0;
         boolean exitAhead=false;
         if (c.enablePrediction && speed>=.8) {
-            var preview=rays.preview(client.level,p,c.predictionLookaheadMs);
+            double confidence=Math.min(1, .35 + .4*r.forward() + .25*r.gaze());
+            int horizon=(int)(c.predictionLookaheadMs*confidence*Math.min(1,.4+speed/30));
+            var preview=rays.preview(client.level,p,horizon);
             predicted=preview.openness();
             exitAhead=c.enableSkyDetection && !sky && preview.sky() && predicted>.55;
             double alignment=p.getDeltaMovement().normalize().dot(p.getLookAngle());

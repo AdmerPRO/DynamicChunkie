@@ -22,16 +22,45 @@ public final class RaycastAnalyzer {
     private static final Preview NO_PREVIEW=new Preview(0,false);
     public record Sample(double average, double horizontal, double vertical, double clear, double forward,
             double front,double back,double left,double right,double gaze,double up,double down) {}
-    public Sample sample(ClientLevel world, Entity player) {
-        Vec3 start = player.getEyePosition();
+    private final double[] distances = new double[DIRECTIONS.length];
+    private int nextRay;
+    private Vec3 origin, look, velocity;
+    private double yaw;
+    private long version;
+    private ClientLevel level;
+    public void reset() {nextRay=0;origin=null;level=null;}
+
+    /** A native clip cannot be interrupted. Check the shared deadline before starting each clip. */
+    public Sample sample(ClientLevel world, Entity player, long revision, long deadline) {
+        Vec3 eye = player.getEyePosition();
+        if (origin == null || level != world || revision != version || eye.distanceToSqr(origin)>64 ||
+                player.getLookAngle().dot(look)<.94) {
+            nextRay=0;
+            level=world;
+            origin=eye;
+            velocity=player.getDeltaMovement();
+            look=player.getLookAngle();
+            yaw=Math.toRadians(player.getYRot());
+            version=revision;
+        }
         ChunkRayTraversal.LoadedChunks loaded = world.getChunkSource()::hasChunk;
-        double sum = 0, horizontal = 0, vertical = 0, clear = 0, up=0, down=0;
-        Vec3 look = player.getLookAngle();
-        double yaw = Math.toRadians(player.getYRot());
+        while (nextRay<DIRECTIONS.length) {
+            if (System.nanoTime()>=deadline) return null;
+            distances[nextRay]=distance(world,player,origin,DIRECTIONS[nextRay],loaded);
+            nextRay++;
+        }
+        if (System.nanoTime()>=deadline) return null;
+        double gaze=distance(world,player,origin,look,loaded)/32;
+        Vec3 motion=velocity.normalize();
+        double forward=velocity.lengthSqr() <= .01 ? -1 :
+                motion.distanceToSqr(look)<1e-12 ? gaze : distance(world,player,origin,motion,loaded)/32;
+        reset();
+        double sum=0,horizontal=0,vertical=0,clear=0,up=0,down=0;
         double facingX = -Math.sin(yaw), facingZ = Math.cos(yaw);
         double front=0,back=0,left=0,right=0,weightFront=0,weightBack=0,weightLeft=0,weightRight=0;
-        for (Vec3 direction : DIRECTIONS) {
-            double distance = distance(world, player, start, direction, loaded);
+        for (int i=0;i<DIRECTIONS.length;i++) {
+            Vec3 direction=DIRECTIONS[i];
+            double distance=distances[i];
             sum += distance;
             if (direction.y == 0) {
                 horizontal += distance;
@@ -48,12 +77,10 @@ public final class RaycastAnalyzer {
             }
             if (distance >= 31.9) clear++;
         }
-        Vec3 velocity = player.getDeltaMovement();
-        double forward = velocity.lengthSqr() > 0.01
-                ? distance(world, player, start, velocity.normalize(), loaded) / 32 : horizontal / (8 * 32);
+        if (forward<0) forward=horizontal/(8*32);
         return new Sample(sum / 26, horizontal / (8 * 32), vertical / (2 * 32), clear / 26, forward,
                 front/(weightFront*32),back/(weightBack*32),left/(weightLeft*32),right/(weightRight*32),
-                distance(world,player,start,look,loaded)/32,up,down);
+                gaze,up,down);
     }
     public Preview preview(ClientLevel world, Entity player, int horizonMs) {
         Vec3 velocity=player.getDeltaMovement(),look=player.getLookAngle();
@@ -67,7 +94,9 @@ public final class RaycastAnalyzer {
         var path=world.clip(new ClipContext(start,future,ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
         if (path.getType()!=HitResult.Type.MISS) return NO_PREVIEW;
         boolean sky=world.canSeeSky(net.minecraft.core.BlockPos.containing(future));
-        return new Preview((.5*distance(world,player,future,direction,loaded)+.35*distance(world,player,future,look,loaded)+
+        double motion=distance(world,player,future,direction,loaded);
+        double gaze=direction.distanceToSqr(look)<1e-12 ? motion : distance(world,player,future,look,loaded);
+        return new Preview((.5*motion+.35*gaze+
                 .15*distance(world,player,future,UP,loaded))/32,sky);
     }
     private double distance(ClientLevel world, Entity player, Vec3 start, Vec3 direction,

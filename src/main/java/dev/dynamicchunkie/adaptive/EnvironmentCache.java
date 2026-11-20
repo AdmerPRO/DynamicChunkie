@@ -1,13 +1,12 @@
 package dev.dynamicchunkie.adaptive;
 
-import dev.dynamicchunkie.EnvironmentScore;
 import java.util.*;
 
 /** Bounded, proximity-aware LRU of the mod's own analysis results, never stale world snapshots. */
-public final class EnvironmentCache {
+public final class EnvironmentCache<T> {
     public record Key(int x,int y,int z,int yaw,int pitch) {}
-    private record Entry(EnvironmentScore result,long time,long revision) {}
-    private LinkedHashMap<Key,Entry> entries=new LinkedHashMap<>(16,.75f,true);
+    private record Entry<T>(T result,long time,long revision) {}
+    private LinkedHashMap<Key,Entry<T>> entries=new LinkedHashMap<>(16,.75f,true);
     private LinkedHashMap<Key,Long> ageOrder = new LinkedHashMap<>();
     private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<Set<Key>> byChunk =
             new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
@@ -23,17 +22,17 @@ public final class EnvironmentCache {
         keys.remove(key);
         if (keys.isEmpty()) byChunk.remove(chunk);
     }
-    public EnvironmentScore get(Key key,long now,long revision,int ttlMs) {
-        Entry value=entries.get(key);
+    public T get(Key key,long now,long revision,int ttlMs) {
+        Entry<T> value=entries.get(key);
         if (value==null) return null;
         if (value.revision!=revision || now-value.time>ttlMs*1_000_000L) {remove(key);return null;}
         hits++;return value.result;
     }
-    public void put(Key key,EnvironmentScore value,long now,long revision,int maxEntries,long budgetBytes) {
+    public void put(Key key,T value,long now,long revision,int maxEntries,long budgetBytes) {
         // 1 KiB conservative charge covers key, result, map nodes and references.
         int limit=(int)Math.max(1,Math.min(maxEntries,budgetBytes/1024));
         ageOrder.putLast(key, now);
-        if (entries.put(key,new Entry(value,now,revision)) == null)
+        if (entries.put(key,new Entry<>(value,now,revision)) == null)
             byChunk.computeIfAbsent(chunk(key), ignored -> new HashSet<>()).add(key);
         while (entries.size()>limit) {
             Key victim=null;double cost=-1;int age=entries.size();

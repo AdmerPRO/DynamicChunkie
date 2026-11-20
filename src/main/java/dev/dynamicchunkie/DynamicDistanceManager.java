@@ -15,7 +15,7 @@ public final class DynamicDistanceManager {
     private final StableTarget stableTarget=new StableTarget();
     private final DistanceTransitions transitions=new DistanceTransitions();
     private final PerformanceBudget performance=new PerformanceBudget();
-    private final EnvironmentCache cache=new EnvironmentCache();
+    private final EnvironmentCache<RaycastAnalyzer.Sample> cache=new EnvironmentCache<>();
     private static final ThreadMXBean THREADS=ManagementFactory.getThreadMXBean();
     private RenderDistanceController controller;
     private boolean initialized,memoryPressure,wasSampling;
@@ -86,7 +86,7 @@ public final class DynamicDistanceManager {
             resetAnalysis();performance.reset();lastFrame=0;
         }
         double speed=player.getDeltaMovement().length()*20;
-        boolean turning=Math.abs(player.getYRot()-lastYaw)>15;
+        boolean turning=Math.abs(net.minecraft.util.Mth.wrapDegrees(player.getYRot()-lastYaw))>15;
         intervalMs=AnalysisPolicy.interval(speed,player.isFallFlying(),turning,
                 settings.enableHardwareAdaptive && (performance.cpuPressure() || analysisMs>3),
                 settings.stationaryIntervalMs,settings.walkingIntervalMs,settings.elytraIntervalMs,
@@ -95,12 +95,19 @@ public final class DynamicDistanceManager {
             long begin=System.nanoTime();
             var eye=player.getEyePosition();
             var key=new EnvironmentCache.Key((int)Math.floor(eye.x*4),(int)Math.floor(eye.y*4),
-                    (int)Math.floor(eye.z*4),(int)Math.floor(player.getYRot()/5),(int)Math.floor(player.getXRot()/5));
-            long revision=((EnvironmentRevision)client.level).dynamicchunkie$revision();
+                    (int)Math.floor(eye.z*4),(int)Math.floor(net.minecraft.util.Mth.wrapDegrees(player.getYRot())/5),(int)Math.floor(player.getXRot()/5));
+            int x=(int)Math.floor(eye.x)>>4, y=(int)Math.floor(eye.y)>>4, z=(int)Math.floor(eye.z)>>4;
+            long revision=((EnvironmentRevision)client.level).dynamicchunkie$changes().region(
+                    x-4,y-4,z-4,x+4,y+4,z+4,true);
             boolean reusable=settings.enableAdaptiveAnalysis && speed<.15;
-            EnvironmentScore cached=reusable?cache.get(key,now,revision,settings.analysisCacheTtlMs):null;
-            score=cached!=null?cached:analyzer.analyze(client,settings);
-            if (cached==null && reusable) cache.put(key,score,now,revision,settings.analysisCacheEntries,
+            RaycastAnalyzer.Sample cached=reusable?cache.get(key,now,revision,settings.analysisCacheTtlMs):null;
+            var sample=cached!=null?cached:analyzer.sample(client,revision,WorkCoordinator.deadline(1_500_000));
+            if (sample==null) {
+                WorkCoordinator.complete(AnalysisScheduler.Module.ENVIRONMENT,begin,0);
+                return;
+            }
+            score=analyzer.evaluate(client,settings,sample);
+            if (cached==null && reusable) cache.put(key,sample,now,revision,settings.analysisCacheEntries,
                     settings.analysisMetadataLimitKiB*1024L);
             if (cached==null) analysisMs=analysisMs*.8+(System.nanoTime()-begin)/1e6*.2;
             smoothed=Double.isNaN(smoothed)?score.openness():smoothed+settings.smoothingFactor*(score.openness()-smoothed);
@@ -127,12 +134,13 @@ public final class DynamicDistanceManager {
             target=stableTarget.restrict(candidate,settings);
         int current=controller.current(),bounded=settings.bound(current);
         if (current!=bounded) {ownership.set(bounded);return;}
+        if (target>current && settings.enableHardwareAdaptive && !client.levelRenderer.hasRenderedAllSections()) return;
         if (Math.abs(target-current)<=settings.deadZoneChunks) return;
         int next=transitions.next(current,target,now,settings.transitionIntervalMs);
         if (next!=current) {ownership.set(settings.bound(next));}
     }
     private void resetAnalysis() {
-        score=null;cache.clear();stableTarget.reset();smoothed=Double.NaN;lastAnalysis=0;
+        analyzer.reset();score=null;cache.clear();stableTarget.reset();smoothed=Double.NaN;lastAnalysis=0;
     }
     public void restore(Minecraft client) {
         if (ownership == null || !ownership.owned() || !ownership.release()) return;
@@ -153,7 +161,7 @@ public final class DynamicDistanceManager {
         if (!config.save()) {config.copySettingsFrom(old);return false;}
         DynamicChunkie.publishSettings();
         dev.dynamicchunkie.visual.VisualRules.configure(config);
-        resetAnalysis();performance.reset();return true;
+        score=null;analyzer.reset();smoothed=Double.NaN;stableTarget.reset();performance.reset();return true;
     }
     public void unload(Object level, int x, int z) {
         if (world == level) cache.removeChunk(x, z);

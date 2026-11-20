@@ -14,12 +14,23 @@ abstract class EnvironmentRevisionMixin implements EnvironmentRevision {
     @Unique private final RenderChanges dynamicchunkie$changes = new RenderChanges();
     @Override public RenderChanges dynamicchunkie$changes() { return dynamicchunkie$changes; }
 
-    @Inject(method={"sendBlockUpdated","setBlocksDirty"},at=@At("RETURN"))
-    private void dynamicchunkie$blocks(CallbackInfo ci) { dynamicchunkie$changes.record(RenderChanges.Kind.BLOCK); }
-
+    @Inject(method="sendBlockUpdated",at=@At("RETURN"))
+    private void dynamicchunkie$updated(net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState,
+                                       net.minecraft.world.level.block.state.BlockState newState,int flags,CallbackInfo ci) {
+        dynamicchunkie$changes.block(pos.getX()>>4,pos.getY()>>4,pos.getZ()>>4);
+    }
+    @Inject(method="setBlocksDirty",at=@At("RETURN"))
+    private void dynamicchunkie$dirty(net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState,
+                                       net.minecraft.world.level.block.state.BlockState newState,CallbackInfo ci) {
+        dynamicchunkie$changes.block(pos.getX()>>4,pos.getY()>>4,pos.getZ()>>4);
+    }
     @Inject(method="onChunkLoaded",at=@At("RETURN"))
-    private void dynamicchunkie$loaded(CallbackInfo ci) { dynamicchunkie$changes.record(RenderChanges.Kind.CHUNK_LOAD); }
-
+    private void dynamicchunkie$loaded(net.minecraft.world.level.ChunkPos pos,CallbackInfo ci) {
+        dynamicchunkie$changes.chunk(RenderChanges.Kind.CHUNK_LOAD,pos.x(),pos.z());
+    }
     @Inject(method="unload",at=@At("RETURN"))
-    private void dynamicchunkie$unloaded(CallbackInfo ci) { dynamicchunkie$changes.record(RenderChanges.Kind.CHUNK_UNLOAD); }
+    private void dynamicchunkie$unloaded(net.minecraft.world.level.chunk.LevelChunk chunk,CallbackInfo ci) {
+        var pos=chunk.getPos();
+        dynamicchunkie$changes.chunk(RenderChanges.Kind.CHUNK_UNLOAD,pos.x(),pos.z());
+    }
 }

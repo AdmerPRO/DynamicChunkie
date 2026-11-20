@@ -4,15 +4,19 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 /** Main-thread frame history; counts refer to extracted render states, not simulated entities. */
 public final class VisualProfiler {
-    private static final double[] frames=new double[180];
-    private static int index, count, entities, blocks;
+    private static final dev.dynamicchunkie.performance.FrameWindow frames=new dev.dynamicchunkie.performance.FrameWindow(180);
+    private static int entities, blocks;
     private static long lastFrame;
     private VisualProfiler() {}
     public static void frame() {
+        var c=DynamicChunkie.configOrNull();
+        if(c==null || !c.profilerOverlay) {
+            if(lastFrame!=0){frames.clear();lastFrame=0;}
+            return;
+        }
         var client=Minecraft.getInstance();long now=System.nanoTime();
-        if(client.level!=null && !client.isPaused() && lastFrame!=0) {
-            frames[index]=(now-lastFrame)/1e6;index=(index+1)%frames.length;count=Math.min(count+1,frames.length);
-        } else count=0;
+        if(client.level!=null && !client.isPaused() && lastFrame!=0)frames.add((now-lastFrame)/1e6);
+        else frames.clear();
         lastFrame=now;
     }
     public static void extracted(int entityCount,int blockCount) {entities=entityCount;blocks=blockCount;}
@@ -38,8 +42,8 @@ public final class VisualProfiler {
             graphics.text(client.font,line,8,y,0xFFFFFFFF,true);y+=12;
         }
         graphics.fill(5,y,185,y+50,0xB0000000);
-        for(int i=0;i<count;i++) {
-            double ms=frames[(index-count+i+frames.length)%frames.length];
+        for(int i=0;i<frames.size();i++) {
+            double ms=frames.oldest(i);
             int height=(int)Math.min(48,ms*.48);
             graphics.fill(5+i,y+49-height,6+i,y+49,ms>33?0xFFFF5555:0xFF55FF88);
         }

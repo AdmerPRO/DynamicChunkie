@@ -22,6 +22,7 @@ abstract class LoadingGameplayMixin {
     private void dynamicchunkie$inputEnd(CallbackInfo ci) {LoadingPresentation.endInput();}
     @Inject(method="tick",at=@At("RETURN"))
     private void dynamicchunkie$unblockedGameplay(CallbackInfo ci) {
+        @SuppressWarnings("PMD.CloseResource") // Borrowed mixin target; Minecraft owns its lifetime.
         Minecraft client=(Minecraft)(Object)this;
         if (!dynamicchunkie$handledKeys && LoadingPresentation.readyForInput() &&
                 client.gui.screen()==null && client.gui.overlay() instanceof LoadingOverlay) {

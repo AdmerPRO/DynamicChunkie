@@ -65,6 +65,7 @@ public final class DynamicChunkieConfig {
         particleTypeBudgets.entrySet().removeIf(e -> e.getKey()==null || e.getValue()==null);
         particleTypeBudgets.replaceAll((key,value)->clamp(value,0,10000));
         if(importantParticleTypes==null)importantParticleTypes=new java.util.HashSet<>();
+        importantParticleTypes.remove(null);
         mobVisualDistance=clamp(mobVisualDistance,8,512);
         playerVisualDistance=clamp(playerVisualDistance,16,1024);
         itemVisualDistance=clamp(itemVisualDistance,8,512);

@@ -3,6 +3,7 @@ package dev.dynamicchunkie;
 import net.minecraft.client.Minecraft;
 
 public final class EnvironmentAnalyzer {
+    private static final double[] SCORE_KNOTS={0,.13,.30,.65,.82,1};
     private final RaycastAnalyzer rays = new RaycastAnalyzer();
     public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig c) {
         var p = client.player;
@@ -19,14 +20,15 @@ public final class EnvironmentAnalyzer {
         double predicted=0;
         boolean exitAhead=false;
         if (c.enablePrediction && speed>=.8) {
-            predicted=rays.preview(client.level,p,c.predictionLookaheadMs);
-            exitAhead=c.enableSkyDetection && !sky && rays.previewSky() && predicted>.55;
+            var preview=rays.preview(client.level,p,c.predictionLookaheadMs);
+            predicted=preview.openness();
+            exitAhead=c.enableSkyDetection && !sky && preview.sky() && predicted>.55;
             double alignment=p.getDeltaMovement().normalize().dot(p.getLookAngle());
             if(flight)open=Math.min(1,open+dev.dynamicchunkie.adaptive.AnalysisPolicy.predictionBoost(
                     speed,r.horizontal(),r.forward(),r.gaze(),predicted,alignment));
             // Only a loaded, unobstructed future position can predict a sky opening.
             if(exitAhead)open=Math.min(1,open+.08*predicted);
-            else if(sky && rays.previewSky() && predicted>.7 && predicted>r.horizontal()+.15)
+            else if(sky && preview.sky() && predicted>.7 && predicted>r.horizontal()+.15)
                 open=Math.min(1,open+.06*(predicted-r.horizontal()));
             if(dev.dynamicchunkie.adaptive.AnalysisPolicy.approachingWall(flight,speed,r.forward()))open=Math.max(0,open-.12);
         }
@@ -53,12 +55,21 @@ public final class EnvironmentAnalyzer {
         return c.bound((int)Math.round(Math.min(cap, target(smoothed, c))));
     }
     static double target(double score, DynamicChunkieConfig c) {
-        double[] knots = {0, .13, .30, .65, .82, 1};
-        int[] values = {c.tunnelDistance, c.smallCaveDistance, c.largeCaveDistance,
-                c.surfaceDistance, c.mountainDistance, c.highAltitudeDistance};
-        for (int i = 1; i < knots.length; i++)
-            if (score <= knots[i]) return values[i-1] + (values[i] - values[i-1]) *
-                    (score - knots[i-1]) / (knots[i] - knots[i-1]);
-        return values[5];
+        for (int i = 1; i < SCORE_KNOTS.length; i++)
+            if (score <= SCORE_KNOTS[i]) {
+                int lower=profileValue(i-1,c),upper=profileValue(i,c);
+                return lower+(upper-lower)*(score-SCORE_KNOTS[i-1])/(SCORE_KNOTS[i]-SCORE_KNOTS[i-1]);
+            }
+        return c.highAltitudeDistance;
+    }
+    private static int profileValue(int index,DynamicChunkieConfig c) {
+        return switch(index) {
+            case 0 -> c.tunnelDistance;
+            case 1 -> c.smallCaveDistance;
+            case 2 -> c.largeCaveDistance;
+            case 3 -> c.surfaceDistance;
+            case 4 -> c.mountainDistance;
+            default -> c.highAltitudeDistance;
+        };
     }
 }

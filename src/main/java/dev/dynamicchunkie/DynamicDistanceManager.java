@@ -4,6 +4,7 @@ import dev.dynamicchunkie.adaptive.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import net.minecraft.client.Minecraft;
+import org.jetbrains.annotations.Nullable;
 
 public final class DynamicDistanceManager {
     final DynamicChunkieConfig config;
@@ -19,20 +20,27 @@ public final class DynamicDistanceManager {
     private long lastAnalysis,lastFrame,lastCpu;
     private double smoothed=Double.NaN,lastYaw,analysisMs;
     private int lastApplied,target,intervalMs=750;
-    private EnvironmentScore score;
+    private @Nullable EnvironmentScore score;
 
     public DynamicDistanceManager(DynamicChunkieConfig config) {this.config=config;}
     public void onFrame(Minecraft client) {
+        boolean sampling=(config.enabled && (config.enableFpsAdaptive || config.enableHardwareAdaptive ||
+                config.enableAdaptiveEntityDistance || config.enableAdaptiveParticles || config.enableSmartClouds) ||
+                config.profilerOverlay || config.debugMode) && client.level!=null && client.player!=null &&
+                client.gui.screen()==null && !client.isPaused();
+        if(!sampling) {
+            if(wasSampling)performance.reset();
+            wasSampling=false;lastFrame=lastCpu=0;
+            return;
+        }
         long now=System.nanoTime();
         long cpu=THREADS.isCurrentThreadCpuTimeSupported()?THREADS.getCurrentThreadCpuTime():-1;
-        boolean sampling=(config.enabled || config.profilerOverlay) && client.level!=null && client.player!=null &&
-                client.gui.screen()==null && !client.isPaused();
-        if (sampling && wasSampling && lastFrame!=0) {
+        if (wasSampling && lastFrame!=0) {
             performance.record((now-lastFrame)/1e6,client.getFrameTimeNs()/1e6,
                     cpu>=0 && lastCpu>=0?(cpu-lastCpu)/1e6:Double.NaN,client.getGpuUtilization());
             performance.summarize(now);
         } else if (wasSampling) performance.reset();
-        wasSampling=sampling;
+        wasSampling=true;
         lastFrame=now;lastCpu=cpu;
     }
     public void noteCombat() {transitions.combat(System.nanoTime());}
@@ -138,15 +146,15 @@ public final class DynamicDistanceManager {
         config.minRenderDistance=Math.min(config.minRenderDistance,maximum);
         config.maxRenderDistance=Math.min(config.maxRenderDistance,maximum);config.validate();
         if (!config.save()) {config.copySettingsFrom(old);return false;}
+        dev.dynamicchunkie.visual.VisualRules.configure(config);
         resetAnalysis();performance.reset();return true;
     }
     public int target() {return target;}
-    public EnvironmentScore score() {return score;}
+    public @Nullable EnvironmentScore score() {return score;}
     public long analysisAgeMs() {return (System.nanoTime()-lastAnalysis)/1_000_000;}
     public int analysisIntervalMs() {return intervalMs;}
     public long cacheHits() {return cache.hits();}
     public long cacheBytes() {return cache.chargedBytes();}
-    public int cacheEntries() {return cache.size();}
     public PerformanceBudget performance() {return performance;}
     public boolean recovering() {return transitions.recovering();}
     public boolean memoryPressure() {return memoryPressure;}

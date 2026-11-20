@@ -9,6 +9,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.Nullable;
 
 public final class DynamicChunkie implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("DynamicChunkie");
@@ -21,7 +22,7 @@ public final class DynamicChunkie implements ClientModInitializer {
         if (manager!=null) manager.onFrame(net.minecraft.client.Minecraft.getInstance());
     }
     public static DynamicDistanceManager distanceManager() {return manager;}
-    public static DynamicChunkieConfig configOrNull() {return manager==null?null:manager.config;}
+    public static @Nullable DynamicChunkieConfig configOrNull() {return manager==null?null:manager.config;}
     public static DynamicChunkieConfig config() { return manager.config; }
     public static boolean applyConfig(DynamicChunkieConfig value) {
         return manager.applyConfig(net.minecraft.client.Minecraft.getInstance(), value);
@@ -30,6 +31,7 @@ public final class DynamicChunkie implements ClientModInitializer {
         var config = DynamicChunkieConfig.load();
         RenderCache.configure(config);
         manager = new DynamicDistanceManager(config);
+        dev.dynamicchunkie.visual.VisualRules.configure(config);
         culling = new dev.dynamicchunkie.culling.EntityCulling(config);
         net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player,world,hand,entity,hit) -> {
             if (player==net.minecraft.client.Minecraft.getInstance().player) manager.noteCombat();
@@ -42,7 +44,8 @@ public final class DynamicChunkie implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(dev.dynamicchunkie.visual.EntityVisualPolicy::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> LOG.info("DynamicChunkie client initialized"));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); dev.dynamicchunkie.sections.HotSoftSections.clear(); });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); culling.clear(); dev.dynamicchunkie.sections.HotSoftSections.clear();
+            dev.dynamicchunkie.visual.EntityVisualPolicy.invalidate();dev.dynamicchunkie.visual.ParticlePolicy.invalidate(); });
         DebugOverlay.register(manager);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->
             dispatcher.register(literal("dynamicchunkie")

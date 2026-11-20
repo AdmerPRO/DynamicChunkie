@@ -27,7 +27,6 @@ public final class EntityCulling {
     private final VoxelOcclusion.Blocks blocks = this::blockAt;
     private net.minecraft.client.multiplayer.ClientLevel world;
     private long snapshotAt;
-    private int hidden;
     private static final class State {
         Vec3 camera, position;
         AABB box;
@@ -35,9 +34,8 @@ public final class EntityCulling {
         int blockedSamples;
     }
     public EntityCulling(DynamicChunkieConfig config) { this.config = config; }
-    public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; hidden = 0; snapshotAt = 0; }
+    public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; snapshotAt = 0; }
     public boolean enabled() { return config.enabled && config.enableEntityCulling && !externalCuller; }
-    public int cachedHidden() { return hidden; }
 
     public void tick(Minecraft client) {
         if (!enabled() || client.level == null || client.player == null) { clear(); return; }
@@ -64,9 +62,6 @@ public final class EntityCulling {
                 sample(entity, camera, now);
             } else states.remove(entity);
         }
-        hidden = 0;
-        for (State state : states.values())
-            if (state.blockedSamples >= 2 && now - state.checkedAt < MAX_AGE) hidden++;
     }
 
     private boolean candidate(Entity entity, Minecraft client) {
@@ -86,7 +81,8 @@ public final class EntityCulling {
         double distance = entity.distanceToSqr(camera);
         boolean blocked = distance >= 64 && distance <= config.entityCullingDistance * config.entityCullingDistance;
         AABB box = entity.getBoundingBox().inflate(.25);
-        if (blocked) blocked = ray(camera, box.getCenter());
+        if (blocked) blocked = VoxelOcclusion.blocked(camera.x,camera.y,camera.z,
+                (box.minX+box.maxX)*.5,(box.minY+box.maxY)*.5,(box.minZ+box.maxZ)*.5,blocks);
         if (blocked) {
             for (int corner = 0; corner < 8; corner++) {
                 double x = (corner & 1) == 0 ? box.minX : box.maxX;
@@ -100,9 +96,6 @@ public final class EntityCulling {
         state.position = position;
         state.box = entity.getBoundingBox();
         state.checkedAt = now;
-    }
-    private boolean ray(Vec3 start, Vec3 end) {
-        return VoxelOcclusion.blocked(start.x, start.y, start.z, end.x, end.y, end.z, blocks);
     }
     private int blockAt(int x, int y, int z) {
         if (!world.getChunkSource().hasChunk(x >> 4, z >> 4)) return -1;

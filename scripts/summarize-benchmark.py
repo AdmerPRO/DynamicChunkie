@@ -7,11 +7,55 @@ from collections import defaultdict
 from statistics import mean
 from pathlib import Path
 
+def paired_change(changes, seed):
+    estimate = f'{mean(changes):+.1f}%'
+    if len(changes) < 4:
+        return estimate + ' (fewer than four pairs)'
+    rng = random.Random(seed)
+    draws = sorted(mean(rng.choices(changes, k=len(changes))) for _ in range(5000))
+    return f'{estimate} [95% bootstrap {draws[125]:+.1f}%, {draws[4874]:+.1f}%]'
+
+
+def workloads(report):
+    print(f"Workload renderer {'Sodium' if report['sodium'] else 'vanilla'}, "
+          f"{report['width']}x{report['height']}, FPS cap {report['fpsCap']}.")
+    pairs = defaultdict(lambda: defaultdict(dict))
+    for run in report['runs']:
+        key = run['scene'], run['entities'], run['limitPerType']
+        pairs[key][run['repeat']][run['enabled']] = run
+    for key, repeats in pairs.items():
+        if any(set(pair) != {True, False} for pair in repeats.values()):
+            raise SystemExit(f'Missing workload pair for {key}')
+        changes = []
+        alloc = {False: [], True: []}
+        for pair in repeats.values():
+            changes.append(100 * (pair[True]['sample']['fps'] / pair[False]['sample']['fps'] - 1))
+            for enabled, run in pair.items():
+                size = run['sample']['clientAllocatedBytes']
+                if size >= 0:
+                    alloc[enabled].append(size / run['ticks'])
+        sizes = ' / '.join(f'{mean(v):,.0f}' if v else 'unavailable' for v in alloc.values())
+        print(f'{key}: FPS change {paired_change(changes, report["seed"])}; '
+              f'client bytes/tick OFF / ON {sizes}')
+    kernels = defaultdict(list)
+    for sample in report.get('selectorSamples', []):
+        kernels[sample['entities'], sample['limit'], sample['heap']].append(sample)
+    for (entities, limit, heap), samples in sorted(kernels.items()):
+        sizes = [s['allocatedBytes'] for s in samples if s['allocatedBytes'] >= 0]
+        size = f'{mean(sizes):,.0f}' if sizes else 'unavailable'
+        print(f'{entities} entities K={limit} {"heap" if heap else "sort"}: '
+              f'{mean(s["wallNs"] for s in samples)/1000:.1f} us/selection, {size} bytes/selection')
+
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('reports', nargs='+', type=Path)
 args = parser.parse_args()
 for path in args.reports:
     report = json.loads(path.read_text())
+    if isinstance(report, dict) and 'runs' in report:
+        print(path.name)
+        workloads(report)
+        continue
     if 'phases' not in report:
         continue
     print(f"\n{path.name}: {report['renderer']}, Minecraft {report['minecraft']}, RD {report['renderDistance']}")
@@ -41,15 +85,9 @@ for path in args.reports:
     print('|---|---:|---:|---:|---:|---:|---:|')
     for scene, pairs in scenes.items():
         avg = lambda side, key: mean(pair[side][key] for pair in pairs)
-        delta = mean((b['fps'] / a['fps'] - 1) * 100 for a, b in pairs)
         unstable = any(max(pair[side]['fps'] for pair in pairs) / min(pair[side]['fps'] for pair in pairs) > 2 for side in (0, 1))
         changes = [(b['fps'] / a['fps'] - 1) * 100 for a, b in pairs]
-        rng = random.Random(report.get('orderSeed', 263))
-        interval = ''
-        if len(changes) >= 4:
-            bootstrap = sorted(mean(rng.choices(changes, k=len(changes))) for _ in range(5000))
-            interval = f' [95% bootstrap {bootstrap[125]:+.1f}%, {bootstrap[4874]:+.1f}%]'
-        change = 'UNSTABLE' if unstable else f'{delta:+.1f}%{interval}'
+        change = 'UNSTABLE' if unstable else paired_change(changes, report.get('orderSeed', 263))
         if unstable:
             unstable_scenes.append(scene)
         active = mean(b['activeFrames'] / b['frames'] * 100 for _, b in pairs)

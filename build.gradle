@@ -10,6 +10,24 @@ repositories {
     mavenCentral()
     maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
 }
+def securityVersions = new Properties()
+file('config/security-versions.properties').withInputStream { securityVersions.load(it) }
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        def group = details.requested.group
+        def module = details.requested.name
+        String patched = null
+        if (group == 'at.yawk.lz4' && module == 'lz4-java') patched = securityVersions.getProperty('lz4')
+        if (group == 'com.google.guava' && module == 'guava') patched = securityVersions.getProperty('guava')
+        if (group == 'io.netty' && module.startsWith('netty-') && !module.startsWith('netty-tcnative'))
+            patched = securityVersions.getProperty('netty')
+        if (group == 'org.apache.logging.log4j') patched = securityVersions.getProperty('log4j')
+        if (patched != null) {
+            details.useVersion(patched)
+            details.because('Use the validated security patch level; keep Netty and Log4j modules aligned')
+        }
+    }
+}
 dependencies {
     minecraft 'com.mojang:minecraft:26.3'
     implementation 'net.fabricmc:fabric-loader:0.20.1'
@@ -33,12 +51,17 @@ pmd {
     consoleOutput = true
 }
 tasks.withType(Pmd).configureEach {
-    reports { xml.required = true; html.required = true }
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = layout.projectDirectory.file("tmp/pmd/${name}.xml")
+        html.outputLocation = layout.projectDirectory.file("tmp/pmd/${name}.html")
+    }
 }
 
 // Public Maven coordinates only. Kept separate from build so vulnerability queries stay explicit.
 tasks.register('dependencyInventory') {
-    def outputFile = layout.buildDirectory.file('reports/security/dependencies.json')
+    def outputFile = layout.projectDirectory.file('tmp/security/dependencies.json')
     outputs.file(outputFile)
     outputs.upToDateWhen { false }
     doLast {
@@ -49,10 +72,18 @@ tasks.register('dependencyInventory') {
                     [name: id.group + ':' + id.module, version: id.version] : null
             }.findAll { it != null }
         }.unique().sort { a, b -> (a.name + a.version) <=> (b.name + b.version) }
-        def file = outputFile.get().asFile
+        def file = outputFile.asFile
         file.parentFile.mkdirs()
         file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(coordinates))
     }
+}
+tasks.register('secureLauncherMetadata', Exec) {
+    description = 'Generate patched Minecraft 26.3 base metadata under ignored tmp/launcher; does not change installed launchers'
+    group = 'verification'
+    workingDir = projectDir
+    commandLine 'python3', 'scripts/patch_launcher_libraries.py',
+            '--input', new File(gradle.gradleUserHomeDir, 'caches/fabric-loom/26.3/mojang_minecraft_info.json').absolutePath,
+            '--output', layout.projectDirectory.file('tmp/launcher/26.3.json').asFile.absolutePath
 }
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
 
@@ -64,6 +95,13 @@ fabricApi {
         enableGameTests = false
         enableClientGameTests = true
         eula = true
+    }
+}
+loom {
+    runs {
+        clientGameTest {
+            securityVersions.each { key, value -> vmArg "-Ddynamicchunkie.security.${key}=${value}" }
+        }
     }
 }
 

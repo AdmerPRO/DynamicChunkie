@@ -32,7 +32,7 @@ For an in-game settings screen, optionally install **Mod Menu 21.0.1** for 26.3.
 Open **Mods → DynamicChunkie → Configure**. The pages cover environment targets, timing, performance/cache budgets, teleport/loading,
 entity distances and category limits, particle types/priorities, terrain culling and the profiler. Save validates and applies settings
 immediately and writes the JSON file. Cancel/Escape discards edits; Defaults resets the
-draft until Save. English and Polish labels are included. No Cloth Config is required.
+draft until Save. English labels are included. No Cloth Config is required.
 Crash recovery fields are managed internally and are not exposed in the UI.
 Without Mod Menu, edit the JSON while Minecraft is closed, then restart.
 
@@ -352,19 +352,48 @@ or negative when scan/filter overhead outweighs avoided work. This version does
 The profiler shows hot membership, pending rebuilds and scan time. See
 [automated benchmarks](docs/hot-soft-benchmarks.md) for reproducible A/B comparisons.
 
-## Java quality and extension points (26.3/master)
+## Development checks
 
-The [Java review](docs/quality/java-review.md) documents removed dead work, cached
-registry rules, bounded nearest-entity selection, shared frame history and native
-section adapters. `./gradlew build` now also runs focused PMD checks; this tooling
-is not included in the mod JAR. For a separately requested online dependency audit:
+`./gradlew build` runs unit tests and focused PMD checks. Development reports and
+local audit notes belong in the ignored repository `/tmp/` directory. They must
+not be committed. Runtime code and maintained documentation use English.
 
 ```sh
 ./gradlew dependencyInventory
-python3 scripts/audit-dependencies.py build/reports/security/dependencies.json
+python3 scripts/audit-dependencies.py tmp/security/dependencies.json
 ```
 
-The recorded audit has unresolved Minecraft-library advisories; see the review
-for scope and limitations. Future work is listed separately in the
-[90-item performance roadmap](docs/quality/performance-roadmap.md). These proposals
-are not enabled features or guaranteed FPS gains.
+PMD reports are written under `tmp/pmd/`; dependency audit results are written
+under `tmp/security/`. These checks do not bundle analysis tools into the mod.
+
+## Patched game libraries
+
+The 26.3 build pins LZ4 1.11.4, Guava 33.8.0-jre, Netty 4.2.21.Final and
+Log4j 2.26.1. Netty and Log4j modules stay aligned. Patch levels are maintained in
+`config/security-versions.properties`. Client tests check the libraries actually
+loaded by Minecraft and exercise LZ4 compression.
+
+Installed launchers resolve game libraries independently of mods. Installing the
+mod JAR alone does not replace those libraries. To generate matching library
+metadata for an instance (requires Python 3):
+
+```sh
+./gradlew secureLauncherMetadata
+```
+
+To audit that generated metadata separately:
+
+```sh
+python3 scripts/audit-dependencies.py tmp/launcher/26.3.json --launcher --output tmp/security/launcher-osv.json
+```
+
+The output is `tmp/launcher/26.3.json`: complete Minecraft 26.3 base metadata with
+updated Maven URLs, checksums, sizes and native classifiers. The task reads Loom's
+26.3 metadata cache and checks the replacement artifacts on Maven Central. It
+does not modify an installed launcher or overwrite the source metadata.
+
+Apply these library entries through the launcher's per-instance library/version
+overrides, retaining its Fabric loader component. The generated file is base
+Minecraft metadata; it must not replace an inherited Fabric loader definition.
+Launcher-specific installation and unrelated mods require their own compatibility
+checks. Other Minecraft version branches are unchanged.

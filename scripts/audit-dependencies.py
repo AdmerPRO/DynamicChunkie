@@ -47,10 +47,21 @@ def audit(packages):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('inventory', type=Path)
-    parser.add_argument('--output', type=Path, default=Path('build/reports/security/osv.json'))
+    parser.add_argument('--launcher', action='store_true', help='Read Maven coordinates from a complete launcher version JSON')
+    parser.add_argument('--output', type=Path, default=Path('tmp/security/osv.json'))
     args = parser.parse_args()
     try:
         packages = json.loads(args.inventory.read_text())
+        if args.launcher:
+            coordinates = set()
+            for library in packages['libraries']:
+                parts = library['name'].split(':')
+                if len(parts) not in (3, 4):
+                    raise ValueError('Unsupported launcher Maven coordinate')
+                coordinates.add((':'.join(parts[:2]), parts[2]))
+            packages = [{'name': name, 'version': version} for name, version in sorted(coordinates)]
+        if not isinstance(packages, list):
+            raise ValueError('Expected a dependency list; use --launcher for version metadata')
         findings = audit(packages)
         identifiers = sorted({v for package in findings for v in package['vulnerabilityIds']})
         details = {v: request_json('vulns/' + urllib.parse.quote(v, safe='')) for v in identifiers}

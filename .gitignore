@@ -4,3 +4,5 @@ bin/
 run/
 .idea/
 *.iml
+/tmp/
+__pycache__/

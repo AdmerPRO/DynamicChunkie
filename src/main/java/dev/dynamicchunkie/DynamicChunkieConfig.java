@@ -15,7 +15,9 @@ public final class DynamicChunkieConfig {
     public boolean diagnosticsEnabled=false, enableJfrEvents=false, enableAdaptiveModuleBudgets=true;
     public int hudRefreshMs=250, cpuSampleIntervalMs=250, sharedAnalysisBudgetMicros=2500;
     public int analysisMetadataLimitKiB=256, entityMetadataLimitKiB=1024, coldMetadataLimitKiB=1024;
+    public boolean shortenAmbientParticles=false;
     public boolean enableHotSoftSections=false;
+    public boolean filterHotSectionDraws=true, deferColdSectionRebuilds=true;
     public int hotSoftScanBudgetMicros=1500;
     public boolean protectImportantEntities=true;
     public boolean enableTerrainSectionCulling=false;
@@ -27,6 +29,9 @@ public final class DynamicChunkieConfig {
     public java.util.Set<String> importantParticleTypes=new java.util.HashSet<>(java.util.List.of(
             "minecraft:damage_indicator","minecraft:crit","minecraft:totem_of_undying","minecraft:enchanted_hit"));
     public boolean enableAdaptiveEntityDistance = false, enableEntityTypeLimits = false;
+    public int entityShadowDistance=0;
+    public int entityNameDistance=0;
+    public int mobDetailDistance=0;
     public int mobVisualDistance=128, playerVisualDistance=256, itemVisualDistance=64,
             armorStandVisualDistance=64, blockEntityVisualDistance=96;
     // Registry IDs; zero means unlimited. Nearest eligible entities are kept first.
@@ -77,6 +82,9 @@ public final class DynamicChunkieConfig {
         particleTypeBudgets.replaceAll((key,value)->clamp(value,0,10000));
         if(importantParticleTypes==null)importantParticleTypes=new java.util.HashSet<>();
         importantParticleTypes.remove(null);
+        entityShadowDistance=clamp(entityShadowDistance,0,512);
+        entityNameDistance=clamp(entityNameDistance,0,512);
+        mobDetailDistance=clamp(mobDetailDistance,0,512);
         mobVisualDistance=clamp(mobVisualDistance,8,512);
         playerVisualDistance=clamp(playerVisualDistance,16,1024);
         itemVisualDistance=clamp(itemVisualDistance,8,512);
@@ -123,6 +131,9 @@ public final class DynamicChunkieConfig {
         diagnosticsEnabled=other.diagnosticsEnabled;enableJfrEvents=other.enableJfrEvents;enableAdaptiveModuleBudgets=other.enableAdaptiveModuleBudgets;
         hudRefreshMs=other.hudRefreshMs;cpuSampleIntervalMs=other.cpuSampleIntervalMs;sharedAnalysisBudgetMicros=other.sharedAnalysisBudgetMicros;
         analysisMetadataLimitKiB=other.analysisMetadataLimitKiB;entityMetadataLimitKiB=other.entityMetadataLimitKiB;coldMetadataLimitKiB=other.coldMetadataLimitKiB;
+        shortenAmbientParticles=other.shortenAmbientParticles;
+        filterHotSectionDraws=other.filterHotSectionDraws;
+        deferColdSectionRebuilds=other.deferColdSectionRebuilds;
         enableHotSoftSections=other.enableHotSoftSections;hotSoftScanBudgetMicros=other.hotSoftScanBudgetMicros;
         protectImportantEntities=other.protectImportantEntities;
         enableTerrainSectionCulling=other.enableTerrainSectionCulling;terrainChecksPerFrame=other.terrainChecksPerFrame;
@@ -134,6 +145,9 @@ public final class DynamicChunkieConfig {
         importantParticleTypes=new java.util.HashSet<>(other.importantParticleTypes);
         enableAdaptiveEntityDistance=other.enableAdaptiveEntityDistance;
         enableEntityTypeLimits=other.enableEntityTypeLimits;
+        entityShadowDistance=other.entityShadowDistance;
+        entityNameDistance=other.entityNameDistance;
+        mobDetailDistance=other.mobDetailDistance;
         mobVisualDistance=other.mobVisualDistance;playerVisualDistance=other.playerVisualDistance;
         itemVisualDistance=other.itemVisualDistance;armorStandVisualDistance=other.armorStandVisualDistance;
         blockEntityVisualDistance=other.blockEntityVisualDistance;

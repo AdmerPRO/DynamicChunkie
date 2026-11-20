@@ -57,6 +57,9 @@
   "combatGraceMs": 5000,
   "enableAdaptiveEntityDistance": false,
   "enableEntityTypeLimits": false,
+  "entityShadowDistance": 0,
+  "entityNameDistance": 0,
+  "mobDetailDistance": 0,
   "mobVisualDistance": 128,
   "playerVisualDistance": 256,
   "itemVisualDistance": 64,
@@ -80,5 +83,8 @@
   "terrainChecksPerFrame": 128,
   "protectImportantEntities": true,
   "enableHotSoftSections": false,
+  "shortenAmbientParticles": false,
+  "filterHotSectionDraws": true,
+  "deferColdSectionRebuilds": true,
   "hotSoftScanBudgetMicros": 1500
 }

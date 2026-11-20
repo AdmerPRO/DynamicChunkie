@@ -53,7 +53,7 @@ public final class ConfigScreen extends Screen {
     }
     private int particleStart() {return 14+(types().size()+4)/5;}
     private int toolsStart() {return particleStart()+(particleTypes().size()+2)/3;}
-    private int pageCount() {return toolsStart()+2;}
+    private int pageCount() {return toolsStart()+3;}
     @Override protected void init() {
         labels.clear();
         row = 0;
@@ -125,6 +125,13 @@ public final class ConfigScreen extends Screen {
                     eviction.active=dev.dynamicchunkie.render.RendererCapabilities.current().coldMeshRetirement();
                     integer("coldGeometryGraceMs",draft.coldGeometryGraceMs,v->draft.coldGeometryGraceMs=v);
                     toggle("enableAsyncSelection",()->draft.enableAsyncSelection,v->draft.enableAsyncSelection=v);
+                } else if (page == toolsStart()+2) {
+                    integer("entityShadowDistance",draft.entityShadowDistance,v->draft.entityShadowDistance=v);
+                    integer("entityNameDistance",draft.entityNameDistance,v->draft.entityNameDistance=v);
+                    integer("mobDetailDistance",draft.mobDetailDistance,v->draft.mobDetailDistance=v);
+                    toggle("shortenAmbientParticles",()->draft.shortenAmbientParticles,v->draft.shortenAmbientParticles=v);
+                    toggle("filterHotSectionDraws",()->draft.filterHotSectionDraws,v->draft.filterHotSectionDraws=v);
+                    toggle("deferColdSectionRebuilds",()->draft.deferColdSectionRebuilds,v->draft.deferColdSectionRebuilds=v);
                 } else if(page<particleStart()) {
                     var types=types();int start=(page-14)*5;
                     for(int i=start;i<Math.min(types.size(),start+5);i++) {

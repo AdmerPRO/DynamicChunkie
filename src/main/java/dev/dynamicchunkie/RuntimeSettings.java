@@ -14,7 +14,8 @@ public final class RuntimeSettings {
     public final int analysisMetadataLimitKiB;
     public final int entityMetadataLimitKiB;
     public final int coldMetadataLimitKiB;
-    public final boolean enableHotSoftSections;
+    public final boolean shortenAmbientParticles;
+    public final boolean enableHotSoftSections, filterHotSectionDraws, deferColdSectionRebuilds;
     public final int hotSoftScanBudgetMicros;
     public final boolean protectImportantEntities;
     public final boolean enableTerrainSectionCulling;
@@ -27,6 +28,9 @@ public final class RuntimeSettings {
     public final int particleVisualDistance;
     public final boolean enableAdaptiveEntityDistance;
     public final boolean enableEntityTypeLimits;
+    public final int entityShadowDistance;
+    public final int entityNameDistance;
+    public final int mobDetailDistance;
     public final int mobVisualDistance;
     public final int playerVisualDistance;
     public final int itemVisualDistance;
@@ -91,6 +95,9 @@ public final class RuntimeSettings {
         entityMetadataLimitKiB=source.entityMetadataLimitKiB;
         coldMetadataLimitKiB=source.coldMetadataLimitKiB;
         enableHotSoftSections=source.enableHotSoftSections;
+        shortenAmbientParticles=source.shortenAmbientParticles;
+        filterHotSectionDraws=source.filterHotSectionDraws;
+        deferColdSectionRebuilds=source.deferColdSectionRebuilds;
         hotSoftScanBudgetMicros=source.hotSoftScanBudgetMicros;
         protectImportantEntities=source.protectImportantEntities;
         enableTerrainSectionCulling=source.enableTerrainSectionCulling;
@@ -103,6 +110,9 @@ public final class RuntimeSettings {
         particleVisualDistance=source.particleVisualDistance;
         enableAdaptiveEntityDistance=source.enableAdaptiveEntityDistance;
         enableEntityTypeLimits=source.enableEntityTypeLimits;
+        entityShadowDistance=source.entityShadowDistance;
+        entityNameDistance=source.entityNameDistance;
+        mobDetailDistance=source.mobDetailDistance;
         mobVisualDistance=source.mobVisualDistance;
         playerVisualDistance=source.playerVisualDistance;
         itemVisualDistance=source.itemVisualDistance;

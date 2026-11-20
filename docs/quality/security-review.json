@@ -1,0 +1,115 @@
+{
+  "checkedAtUtc": "2026-11-19T16:45:59.436940+00:00",
+  "source": "https://api.osv.dev/v1/",
+  "queriedCoordinates": 126,
+  "uniqueAdvisories": 11,
+  "status": "REQUIRES_REVIEW",
+  "findings": [
+    {
+      "name": "at.yawk.lz4:lz4-java",
+      "version": "1.10.1",
+      "vulnerabilityIds": [
+        "GHSA-343h-94h5-c4wr",
+        "GHSA-4v53-57pg-c464",
+        "GHSA-6cx8-rjf8-pr8g",
+        "GHSA-gm45-99xc-r7wv",
+        "GHSA-mcr4-qmvw-px4g",
+        "GHSA-xx22-p4ch-683r"
+      ],
+      "inMinecraft263Manifest": true,
+      "advisories": [
+        {
+          "id": "GHSA-343h-94h5-c4wr",
+          "url": "https://osv.dev/vulnerability/GHSA-343h-94h5-c4wr"
+        },
+        {
+          "id": "GHSA-4v53-57pg-c464",
+          "url": "https://osv.dev/vulnerability/GHSA-4v53-57pg-c464"
+        },
+        {
+          "id": "GHSA-6cx8-rjf8-pr8g",
+          "url": "https://osv.dev/vulnerability/GHSA-6cx8-rjf8-pr8g"
+        },
+        {
+          "id": "GHSA-gm45-99xc-r7wv",
+          "url": "https://osv.dev/vulnerability/GHSA-gm45-99xc-r7wv"
+        },
+        {
+          "id": "GHSA-mcr4-qmvw-px4g",
+          "url": "https://osv.dev/vulnerability/GHSA-mcr4-qmvw-px4g"
+        },
+        {
+          "id": "GHSA-xx22-p4ch-683r",
+          "url": "https://osv.dev/vulnerability/GHSA-xx22-p4ch-683r"
+        }
+      ]
+    },
+    {
+      "name": "com.google.guava:guava",
+      "version": "33.6.0-jre",
+      "vulnerabilityIds": [
+        "GHSA-xxph-c9ww-hj94"
+      ],
+      "inMinecraft263Manifest": true,
+      "advisories": [
+        {
+          "id": "GHSA-xxph-c9ww-hj94",
+          "url": "https://osv.dev/vulnerability/GHSA-xxph-c9ww-hj94"
+        }
+      ]
+    },
+    {
+      "name": "io.netty:netty-codec-http",
+      "version": "4.2.16.Final",
+      "vulnerabilityIds": [
+        "GHSA-8c42-7qj2-3j46"
+      ],
+      "inMinecraft263Manifest": true,
+      "advisories": [
+        {
+          "id": "GHSA-8c42-7qj2-3j46",
+          "url": "https://osv.dev/vulnerability/GHSA-8c42-7qj2-3j46"
+        }
+      ]
+    },
+    {
+      "name": "io.netty:netty-handler",
+      "version": "4.2.16.Final",
+      "vulnerabilityIds": [
+        "GHSA-c4c3-7fpv-j4q5",
+        "GHSA-fccg-mwvh-qqg4"
+      ],
+      "inMinecraft263Manifest": true,
+      "advisories": [
+        {
+          "id": "GHSA-c4c3-7fpv-j4q5",
+          "url": "https://osv.dev/vulnerability/GHSA-c4c3-7fpv-j4q5"
+        },
+        {
+          "id": "GHSA-fccg-mwvh-qqg4",
+          "url": "https://osv.dev/vulnerability/GHSA-fccg-mwvh-qqg4"
+        }
+      ]
+    },
+    {
+      "name": "org.apache.logging.log4j:log4j-api",
+      "version": "2.26.0",
+      "vulnerabilityIds": [
+        "GHSA-qv9r-c865-cp47"
+      ],
+      "inMinecraft263Manifest": true,
+      "advisories": [
+        {
+          "id": "GHSA-qv9r-c865-cp47",
+          "url": "https://osv.dev/vulnerability/GHSA-qv9r-c865-cp47"
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "No returned advisory is not proof of safety or database coverage.",
+    "Minecraft, Fabric and Modrinth artifacts may not be indexed under these Maven names.",
+    "Build plugins/tool dependencies and code reachability are not assessed.",
+    "Reachability and exploitability in Minecraft or this mod were not established. Library versions were not overridden."
+  ]
+}

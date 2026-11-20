@@ -351,3 +351,20 @@ or negative when scan/filter overhead outweighs avoided work. This version does
 **not** evict cold meshes or client chunks, so it cannot promise a RAM/VRAM saving.
 The profiler shows hot membership, pending rebuilds and scan time. See
 [automated benchmarks](docs/hot-soft-benchmarks.md) for reproducible A/B comparisons.
+
+## Java quality and extension points (26.3/master)
+
+The [Java review](docs/quality/java-review.md) documents removed dead work, cached
+registry rules, bounded nearest-entity selection, shared frame history and native
+section adapters. `./gradlew build` now also runs focused PMD checks; this tooling
+is not included in the mod JAR. For a separately requested online dependency audit:
+
+```sh
+./gradlew dependencyInventory
+python3 scripts/audit-dependencies.py build/reports/security/dependencies.json
+```
+
+The recorded audit has unresolved Minecraft-library advisories; see the review
+for scope and limitations. Future work is listed separately in the
+[90-item performance roadmap](docs/quality/performance-roadmap.md). These proposals
+are not enabled features or guaranteed FPS gains.

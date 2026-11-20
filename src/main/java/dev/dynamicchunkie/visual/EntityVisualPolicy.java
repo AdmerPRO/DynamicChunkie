@@ -19,13 +19,22 @@ public final class EntityVisualPolicy {
     private static final IntOpenHashSet hidden = new IntOpenHashSet();
     private static final IdentityHashMap<EntityType<?>, NearestSelection<Entity>> selections = new IdentityHashMap<>();
     private static Object world;
-    private static long observedSkips;
+    private static long observedSkips, generation;
+    private static java.util.concurrent.CompletableFuture<SelectionSnapshot.Result> pending;
+    private static SelectionSnapshot.Stamp applied;
     private static double scale = 1;
 
     private EntityVisualPolicy() {}
 
     public static void invalidate() {
+        if (world != null) generation++;
+        applied = null;
         hidden.clear(); selections.clear(); world = null; observedSkips = 0; scale = 1;
+    }
+
+    public static void forget(int entityId) {
+        hidden.remove(entityId);
+        if (pending != null) generation++;
     }
 
     public static void release() {
@@ -45,9 +54,29 @@ public final class EntityVisualPolicy {
             double desired = VisualBudget.scale(mean, c.targetFps, client.options.framerateLimit().get());
             scale += (desired - scale) * .025;
         } else scale = 1;
+        if (world != null && world != client.level) invalidate();
+        if (applied != null && !applied.equals(stamp(client))) {
+            hidden.clear();
+            applied = null;
+        }
+        if (pending != null && pending.isDone()) {
+            var result = pending.isCompletedExceptionally() ? null : pending.getNow(null);
+            pending = null;
+            if (world == client.level && c.enableAsyncSelection && result != null && result.validFor(stamp(client))) {
+                hidden.clear();
+                hidden.addAll(result.hidden());
+                applied = result.stamp();
+            }
+        }
         long now = System.nanoTime();
         if (!WorkCoordinator.admit(AnalysisScheduler.Module.ENTITY_SELECTION, 250_000_000L, world != client.level)) return;
         world = client.level;
+        if (c.enableAsyncSelection && c.enableEntityTypeLimits && !c.entityTypeLimits.isEmpty()) {
+            if (pending == null) scheduleSnapshot(client);
+            WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_SELECTION, now, observedSkips);
+            observedSkips = 0;
+            return;
+        }
         hidden.clear();
         for (var selection : selections.values()) selection.clear();
         if (!c.enableEntityTypeLimits || c.entityTypeLimits.isEmpty()) return;
@@ -74,6 +103,34 @@ public final class EntityVisualPolicy {
             for (int i = 0; i < selection.size(); i++) hidden.remove(selection.valueAt(i).getId());
         WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_SELECTION, now, observedSkips);
         observedSkips = 0;
+    }
+
+    private static SelectionSnapshot.Stamp stamp(Minecraft client) {
+        var camera = client.gameRenderer.mainCamera().position();
+        long geometry = ((dev.dynamicchunkie.EnvironmentRevision)client.level).dynamicchunkie$revision();
+        return new SelectionSnapshot.Stamp(generation, geometry, camera.x, camera.y, camera.z);
+    }
+
+    private static void scheduleSnapshot(Minecraft client) {
+        var settings = DynamicChunkie.settings();
+        var camera = client.gameRenderer.mainCamera().position();
+        var inputs = new java.util.ArrayList<SelectionSnapshot.Candidate>();
+        int scanned = 0;
+        for (var entity : client.level.entitiesForRendering()) {
+            if ((++scanned & 63) == 0 && !WorkCoordinator.available() ||
+                    inputs.size() >= settings.entityMetadataLimitKiB * 2) {
+                hidden.clear();
+                return;
+            }
+            if (entity instanceof Player || settings.protectImportantEntities &&
+                    (entity.hasCustomName() || entity.isCurrentlyGlowing())) continue;
+            int limit = VisualRules.entity(entity.getType()).limit();
+            if (limit > 0) inputs.add(new SelectionSnapshot.Candidate(entity.getId(),
+                    net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getId(entity.getType()), limit,
+                    entity.distanceToSqr(camera)));
+        }
+        var snapshot = new SelectionSnapshot(stamp(client), inputs);
+        pending = java.util.concurrent.CompletableFuture.supplyAsync(snapshot::select);
     }
 
     public static boolean hide(Entity entity, double x, double y, double z) {

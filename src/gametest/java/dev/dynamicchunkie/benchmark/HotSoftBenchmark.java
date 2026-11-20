@@ -11,7 +11,7 @@ public final class HotSoftBenchmark implements FabricClientGameTest {
         if(!Boolean.getBoolean("dynamicchunkie.benchmark"))return;
         int warmup=Integer.getInteger("dynamicchunkie.benchmarkWarmupTicks",100);
         int samples=Integer.getInteger("dynamicchunkie.benchmarkSampleTicks",200);
-        int repeats=Integer.getInteger("dynamicchunkie.benchmarkRepeats",2);
+        int repeats=Integer.getInteger("dynamicchunkie.benchmarkRepeats",6);
         if(warmup<10 || samples<20 || repeats<1 || repeats>10)throw new IllegalArgumentException("Invalid benchmark duration/repeats");
         var backup=context.computeOnClient(client->DynamicChunkie.config().copy());
         int fpsLimit=context.computeOnClient(client->client.options.framerateLimit().get());
@@ -22,6 +22,8 @@ public final class HotSoftBenchmark implements FabricClientGameTest {
         var graphics=context.computeOnClient(client->Map.of(
                 "backend",com.mojang.blaze3d.systems.RenderSystem.getBackendDescription(),
                 "width",client.getWindow().getWidth(),"height",client.getWindow().getHeight()));
+        long seed=Long.getLong("dynamicchunkie.benchmarkSeed",263L);
+        var orderRandom=new Random(seed);
         var phases=new ArrayList<Phase>();
         try(var world=context.worldBuilder().create()) {
             world.getServer().runCommand("difficulty peaceful");world.getServer().runCommand("weather clear");
@@ -33,11 +35,12 @@ public final class HotSoftBenchmark implements FabricClientGameTest {
             context.runOnClient(client->{client.options.enableVsync().set(false);client.options.framerateLimit().set(260);
                 client.options.inactivityFpsLimit().set(net.minecraft.client.InactivityFpsLimit.MINIMIZED);client.options.pauseOnLostFocus=false;});
             for(String scene:List.of("top_down_flight","horizon","cave","offscreen_updates"))for(int repeat=0;repeat<repeats;repeat++) {
+                boolean firstOn = orderRandom.nextBoolean();
                 for(int order=0;order<2;order++) {
-                    boolean on=((repeat+order)&1)==1;
+                    boolean on=order==0 ? firstOn : !firstOn;
                     context.runOnClient(client->{
                         var c=backup.copy();c.enabled=true;c.minRenderDistance=8;c.maxRenderDistance=8;
-                        c.preserveRenderCache=true;c.enableHotSoftSections=on;c.hotSoftScanBudgetMicros=5000;
+                        c.enableColdGeometryEviction=false;c.preserveRenderCache=true;c.enableHotSoftSections=on;c.hotSoftScanBudgetMicros=5000;
                         c.enableTerrainSectionCulling=false;c.enableEntityCulling=false;c.enableAdaptiveEntityDistance=false;
                         c.enableEntityTypeLimits=false;c.enableAdaptiveParticles=false;c.enableSmartClouds=false;
                         c.enableFpsAdaptive=false;c.enableHardwareAdaptive=false;c.enableTeleportRecovery=false;
@@ -80,7 +83,7 @@ public final class HotSoftBenchmark implements FabricClientGameTest {
             Path directory=Path.of(System.getProperty("dynamicchunkie.benchmarkOutput","../../benchmarks"));Files.createDirectories(directory);
             String name="hot-soft-"+renderer+"-"+System.currentTimeMillis();
             var report=new LinkedHashMap<String,Object>();report.put("minecraft","26.3");report.put("modVersion","0.1.0");
-            report.put("renderer",renderer);report.put("java",System.getProperty("java.version"));report.put("os",System.getProperty("os.name"));
+            report.put("orderSeed",seed);report.put("renderer",renderer);report.put("java",System.getProperty("java.version"));report.put("os",System.getProperty("os.name"));
             report.put("processors",Runtime.getRuntime().availableProcessors());report.put("warmupTicks",warmup);report.put("sampleTicks",samples);report.put("repeats",repeats);
             report.put("inactivityFpsLimit","MINIMIZED");report.put("throttleGuard",true);
             report.put("graphics",graphics);report.put("scanBudgetMicros",5000);report.put("equalCandidateTelemetry",true);

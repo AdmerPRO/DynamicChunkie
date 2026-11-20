@@ -12,9 +12,9 @@ world; they do not open your saves. Benchmark fixtures belong to the separate
 python3 scripts/summarize-benchmark.py build/benchmarks/*.json
 ```
 
-The default is 100 warmup ticks, 200 measured ticks and two repetitions of each
+The default is 100 warmup ticks, 200 measured ticks and six repetitions of each
 scene. At normal tick speed these are roughly five and ten seconds per phase.
-OFF/ON order alternates AB then BA. Only hot/soft changes between phases: RD is
+Each pair uses a seeded random OFF/ON order (override with `-PbenchmarkSeed=263`). The summary resamples complete pairs for a 95% bootstrap interval with at least four repetitions. Only hot/soft changes between phases: RD is
 fixed at eight, other adaptive visual controls are off, VSync is off and the
 framerate option is set to 260 (the vanilla unlimited option). AFK throttling is
 disabled using the native MINIMIZED inactivity option; each test tick rejects an
@@ -84,3 +84,13 @@ cold rebuild admission, urgent and initial mesh safety, replay on returning to
 view, disabling, and Simulation Distance isolation, alongside existing tests.
 Benchmark runs deliberately select only the benchmark entrypoint; a normal run
 regenerates the normal test metadata.
+
+### Farm and particle workloads
+
+Run `./gradlew runClientGameTest -Pbenchmark=workloads` in a graphical session. Add `-PwithSodium` for the Sodium adapter. The fixture uses a disposable world, mixed pig/cow farms with 100, 1,000 and 5,000 entities and limits of 10 and 100 per type. The particle emitter requests 240 smoke and 16 totem effects per tick. Each pair compares the relevant feature enabled and disabled. Set `-PbenchmarkFpsCap=60` or `120` to repeat at a different cap.
+
+The workload JSON records frame intervals, selection calls and nanoseconds, JVM-wide GC collections, client-thread CPU and allocated bytes. Divide allocated bytes by measured ticks for bytes/tick. A counter value of -1 means the JVM did not expose it. Each phase includes the game and renderer. These totals cannot isolate allocations in the selector itself.
+
+The workload report also includes paired selector timings on frozen positions from the actual farm. A stable full-sort reference and the bounded heap must choose the same IDs. Each kernel has eight warmups followed by sixteen randomized pairs. CPU time, allocated bytes and JVM GC counts cover each kernel call. A selection call can span a different interval from one game tick.
+
+Run `./gradlew runClientGameTest -Pbenchmark=travel` to measure six checkpoints on generated terrain and six on a fresh, separate lane. The fixture also equips an Elytra, asserts sustained fall-flying, and completes a native resource reload. Use `-PbenchmarkWidth=1280 -PbenchmarkHeight=720 -PbenchmarkFpsCap=60` or `1920/1080/120` for the workload suite. The JSON records the actual framebuffer size. For a remote-server trial, repeat the same route and teleport on your server, export diagnostics and record the server's view distance, latency and client video settings alongside the capture.

@@ -2,6 +2,7 @@
 """Summarize paired hot/soft A/B reports. Uses only the Python standard library."""
 import argparse
 import json
+import random
 from collections import defaultdict
 from statistics import mean
 from pathlib import Path
@@ -11,9 +12,11 @@ parser.add_argument('reports', nargs='+', type=Path)
 args = parser.parse_args()
 for path in args.reports:
     report = json.loads(path.read_text())
+    if 'phases' not in report:
+        continue
     print(f"\n{path.name}: {report['renderer']}, Minecraft {report['minecraft']}, RD {report['renderDistance']}")
     print(f"Warmup {report['warmupTicks']} ticks; samples {report['sampleTicks']} ticks; repeats {report['repeats']}.")
-    if report['warmupTicks'] < 100 or report['sampleTicks'] < 200 or report['repeats'] < 2:
+    if report['warmupTicks'] < 100 or report['sampleTicks'] < 200 or report['repeats'] < 4:
         print('SMOKE TEST: these short samples cannot establish a performance gain.')
     if not report.get('equalCandidateTelemetry', False):
         print('Legacy report: unequal candidate telemetry; rerun before comparing FPS.')
@@ -40,7 +43,13 @@ for path in args.reports:
         avg = lambda side, key: mean(pair[side][key] for pair in pairs)
         delta = mean((b['fps'] / a['fps'] - 1) * 100 for a, b in pairs)
         unstable = any(max(pair[side]['fps'] for pair in pairs) / min(pair[side]['fps'] for pair in pairs) > 2 for side in (0, 1))
-        change = 'UNSTABLE' if unstable else f'{delta:+.1f}%'
+        changes = [(b['fps'] / a['fps'] - 1) * 100 for a, b in pairs]
+        rng = random.Random(report.get('orderSeed', 263))
+        interval = ''
+        if len(changes) >= 4:
+            bootstrap = sorted(mean(rng.choices(changes, k=len(changes))) for _ in range(5000))
+            interval = f' [95% bootstrap {bootstrap[125]:+.1f}%, {bootstrap[4874]:+.1f}%]'
+        change = 'UNSTABLE' if unstable else f'{delta:+.1f}%{interval}'
         if unstable:
             unstable_scenes.append(scene)
         active = mean(b['activeFrames'] / b['frames'] * 100 for _, b in pairs)

@@ -114,7 +114,7 @@ tasks.withType(Jar).configureEach {
 if (providers.gradleProperty('benchmark').isPresent()) {
     loom { runs { clientGameTest {
         vmArg '-Ddynamicchunkie.benchmark=true'
-        ['WarmupTicks', 'SampleTicks', 'Repeats'].each { suffix ->
+        ['WarmupTicks', 'SampleTicks', 'Repeats', 'Seed', 'FpsCap', 'Width', 'Height'].each { suffix ->
             def key = 'benchmark' + suffix
             if (providers.gradleProperty(key).isPresent()) vmArg '-Ddynamicchunkie.' + key + '=' + providers.gradleProperty(key).get()
         }
@@ -122,12 +122,15 @@ if (providers.gradleProperty('benchmark').isPresent()) {
     } } }
 }
 tasks.named('processGametestResources') {
-    inputs.property('benchmarkMode', providers.gradleProperty('benchmark').isPresent())
+    inputs.property('benchmarkMode', providers.gradleProperty('benchmark').orElse('disabled'))
     doLast {
         if (providers.gradleProperty('benchmark').isPresent()) {
             def metadata = new File(destinationDir, 'fabric.mod.json')
             def data = new groovy.json.JsonSlurper().parse(metadata)
-            data.entrypoints['fabric-client-gametest'] = ['dev.dynamicchunkie.benchmark.HotSoftBenchmark']
+            def workload = providers.gradleProperty('benchmark').get()
+            def fixtures = [workloads: 'VisualWorkloadBenchmark', travel: 'TravelBenchmark', '': 'HotSoftBenchmark']
+            if (!fixtures.containsKey(workload)) throw new GradleException("Unknown benchmark suite: " + workload)
+            data.entrypoints['fabric-client-gametest'] = ['dev.dynamicchunkie.benchmark.' + fixtures[workload]]
             metadata.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(data))
         }
     }

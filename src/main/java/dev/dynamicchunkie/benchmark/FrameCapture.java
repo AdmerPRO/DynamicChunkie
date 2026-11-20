@@ -10,6 +10,7 @@ public final class FrameCapture {
         public double wallSeconds,meanMs,p50Ms,p95Ms,p99Ms,fps;
         public double meanCandidates,meanSkipped,meanHotSlots,meanCaptureMicros;
         public long heapStartBytes,heapEndBytes,gcCollections,ownCacheChargeBytes,deferrals,replayed,fallbackFrames;
+        public long clientAllocatedBytes, clientCpuNanos;
         public int hotSlots,logicalSoftSlots,pendingRebuilds;
         public boolean samplesCapped;
         public transient double[] intervals;
@@ -17,9 +18,20 @@ public final class FrameCapture {
     private static final class Session {
         final double[] times=new double[65536];
         final long start=System.nanoTime(),heap=usedHeap(),gc=gcCount();
+        final long allocated=allocatedBytes(), cpu=cpuTime();
         final long deferred=HotSoftSections.deferredTotal(),replayed=HotSoftSections.replayedTotal(),fallbacks=HotSoftSections.fallbackFrames();
         long last,sumNs,candidates,skipped,hot,captureNs;int frames,samples,activeFrames;
     }
+    private static long allocatedBytes() {
+        var bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        return bean instanceof com.sun.management.ThreadMXBean extended && extended.isThreadAllocatedMemorySupported()
+                && extended.isThreadAllocatedMemoryEnabled() ? extended.getCurrentThreadAllocatedBytes() : -1;
+    }
+    private static long cpuTime() {
+        var bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        return bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime() : -1;
+    }
+    private static long delta(long start, long end) { return start >= 0 && end >= start ? end-start : -1; }
     private static long usedHeap(){var r=Runtime.getRuntime();return r.totalMemory()-r.freeMemory();}
     private static long gcCount(){long n=0;for(var gc:java.lang.management.ManagementFactory.getGarbageCollectorMXBeans())if(gc.getCollectionCount()>0)n+=gc.getCollectionCount();return n;}
     public static boolean recording(){return active!=null;}
@@ -36,7 +48,7 @@ public final class FrameCapture {
     }
     public static Result end() {
         var s=active;if(s==null)throw new IllegalStateException("No benchmark session");active=null;
-        var r=new Result();r.heapEndBytes=usedHeap();r.heapStartBytes=s.heap;r.gcCollections=gcCount()-s.gc;
+        var r=new Result();r.clientAllocatedBytes=delta(s.allocated,allocatedBytes());r.clientCpuNanos=delta(s.cpu,cpuTime());r.heapEndBytes=usedHeap();r.heapStartBytes=s.heap;r.gcCollections=gcCount()-s.gc;
         r.wallSeconds=(System.nanoTime()-s.start)/1e9;r.frames=s.frames;r.activeFrames=s.activeFrames;r.percentileSamples=s.samples;r.samplesCapped=s.frames>s.samples;
         r.intervals=java.util.Arrays.copyOf(s.times,s.samples);var sorted=r.intervals.clone();java.util.Arrays.sort(sorted);
         if(s.frames>0){r.meanMs=s.sumNs/1e6/s.frames;r.fps=1000/r.meanMs;

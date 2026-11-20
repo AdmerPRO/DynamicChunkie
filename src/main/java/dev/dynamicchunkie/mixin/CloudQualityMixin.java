@@ -11,7 +11,6 @@ abstract class CloudQualityMixin {
     private void dynamicchunkie$quality(CallbackInfoReturnable<CloudStatus> cir) {
         var c=DynamicChunkie.settings();
         if(c==null || !c.enabled || !c.enableSmartClouds)return;
-        double scale=EntityVisualPolicy.scale();
-        cir.setReturnValue(dev.dynamicchunkie.visual.VisualBudget.clouds(cir.getReturnValue(),scale));
+        cir.setReturnValue(EntityVisualPolicy.clouds(cir.getReturnValue()));
     }
 }

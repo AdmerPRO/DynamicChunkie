@@ -64,8 +64,11 @@ public final class DynamicChunkie implements ClientModInitializer {
             manager.unload(level, pos.x(), pos.z());
             HotSoftSections.unload(level, pos.x(), pos.z());
         });
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_LOAD.register((entity,level) ->
+                EntityVisualPolicy.entityChanged(entity));
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
             culling.forget(entity);
+            EntityVisualPolicy.entityChanged(entity);
             EntityVisualPolicy.forget(entity.getId());
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);

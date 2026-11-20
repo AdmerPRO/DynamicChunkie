@@ -16,23 +16,41 @@ import net.minecraft.world.entity.player.Player;
 
 /** Client-only selection. Never removes entities or changes their ticking/network state. */
 public final class EntityVisualPolicy {
+    private static final IntOpenHashSet distant = new IntOpenHashSet();
     private static final IntOpenHashSet hidden = new IntOpenHashSet();
     private static final IdentityHashMap<EntityType<?>, NearestSelection<Entity>> selections = new IdentityHashMap<>();
     private static Object world;
     private static long observedSkips, generation;
     private static java.util.concurrent.CompletableFuture<SelectionSnapshot.Result> pending;
     private static SelectionSnapshot.Stamp applied;
+    private static long membershipRevision;
+    public static void entityChanged(Entity entity) {
+        var c=DynamicChunkie.settings();
+        if (c!=null && c.enabled && c.enableEntityTypeLimits && !c.entityTypeLimits.isEmpty() &&
+                entity.level()==world && VisualRules.entity(entity.getType()).limit()>0) membershipRevision++;
+    }
+    private static Iterable<Entity> candidates(Minecraft client) {
+        var c=DynamicChunkie.settings();
+        if (!c.enableAdaptiveEntityDistance) return client.level.entitiesForRendering();
+        var camera=client.gameRenderer.mainCamera().position();
+        double radius=Math.max(c.mobVisualDistance,Math.max(c.itemVisualDistance,c.armorStandVisualDistance))+4;
+        return client.level.getEntities((Entity)null, new net.minecraft.world.phys.AABB(camera,camera).inflate(radius),
+                entity->!(entity instanceof Player) && VisualRules.entity(entity.getType()).limit()>0);
+    }
+    private static final CloudGovernor clouds = new CloudGovernor();
+    public static net.minecraft.client.CloudStatus clouds(net.minecraft.client.CloudStatus selected) {return clouds.limit(selected);}
     private static double scale = 1;
 
     private EntityVisualPolicy() {}
 
     public static void invalidate() {
-        if (world != null) generation++;
+        generation++;
         applied = null;
-        hidden.clear(); selections.clear(); world = null; observedSkips = 0; scale = 1;
+        distant.clear(); hidden.clear(); selections.clear(); world = null; observedSkips = 0; scale = 1; clouds.reset();
     }
 
     public static void forget(int entityId) {
+        distant.remove(entityId);
         hidden.remove(entityId);
         if (pending != null) generation++;
     }
@@ -40,6 +58,7 @@ public final class EntityVisualPolicy {
     public static void release() {
         invalidate();
         hidden.trim();
+        distant.trim();
         dev.dynamicchunkie.diagnostics.EntityRejections.release();
     }
 
@@ -52,7 +71,8 @@ public final class EntityVisualPolicy {
         if (c.enableAdaptiveEntityDistance || c.enableAdaptiveParticles || c.enableSmartClouds) {
             double mean = DynamicChunkie.distanceManager().performance().meanMs();
             double desired = VisualBudget.scale(mean, c.targetFps, client.options.framerateLimit().get());
-            scale += (desired - scale) * .025;
+            scale += (desired - scale) * (desired < scale ? .06 : .015);
+            if (c.enableSmartClouds) clouds.update(scale, System.nanoTime()); else clouds.reset();
         } else scale = 1;
         if (world != null && world != client.level) invalidate();
         if (applied != null && !applied.equals(stamp(client))) {
@@ -71,6 +91,11 @@ public final class EntityVisualPolicy {
         long now = System.nanoTime();
         if (!WorkCoordinator.admit(AnalysisScheduler.Module.ENTITY_SELECTION, 250_000_000L, world != client.level)) return;
         world = client.level;
+        if (applied!=null && applied.equals(stamp(client))) {
+            WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_SELECTION,now,observedSkips);
+            observedSkips=0;
+            return;
+        }
         if (c.enableAsyncSelection && c.enableEntityTypeLimits && !c.entityTypeLimits.isEmpty()) {
             if (pending == null) scheduleSnapshot(client);
             WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_SELECTION, now, observedSkips);
@@ -82,9 +107,11 @@ public final class EntityVisualPolicy {
         if (!c.enableEntityTypeLimits || c.entityTypeLimits.isEmpty()) return;
         var camera = client.gameRenderer.mainCamera().position();
         int scanned = 0;
-        for (Entity entity : client.level.entitiesForRendering()) {
+        boolean complete=true;
+        for (Entity entity : candidates(client)) {
             if (++scanned > c.entityMetadataLimitKiB * 8 || ((scanned & 63) == 0 && !WorkCoordinator.available())) {
                 hidden.clear();
+                complete=false;
                 break;
             }
             if (entity instanceof Player || c.protectImportantEntities && (entity.isCurrentlyGlowing() || entity.hasCustomName())) continue;
@@ -101,14 +128,14 @@ public final class EntityVisualPolicy {
         }
         for (var selection : selections.values())
             for (int i = 0; i < selection.size(); i++) hidden.remove(selection.valueAt(i).getId());
+        if (complete) applied=stamp(client);
         WorkCoordinator.complete(AnalysisScheduler.Module.ENTITY_SELECTION, now, observedSkips);
         observedSkips = 0;
     }
 
     private static SelectionSnapshot.Stamp stamp(Minecraft client) {
         var camera = client.gameRenderer.mainCamera().position();
-        long geometry = ((dev.dynamicchunkie.EnvironmentRevision)client.level).dynamicchunkie$revision();
-        return new SelectionSnapshot.Stamp(generation, geometry, camera.x, camera.y, camera.z);
+        return new SelectionSnapshot.Stamp(generation, membershipRevision, camera.x, camera.y, camera.z);
     }
 
     private static void scheduleSnapshot(Minecraft client) {
@@ -116,7 +143,7 @@ public final class EntityVisualPolicy {
         var camera = client.gameRenderer.mainCamera().position();
         var inputs = new java.util.ArrayList<SelectionSnapshot.Candidate>();
         int scanned = 0;
-        for (var entity : client.level.entitiesForRendering()) {
+        for (var entity : candidates(client)) {
             if ((++scanned & 63) == 0 && !WorkCoordinator.available() ||
                     inputs.size() >= settings.entityMetadataLimitKiB * 2) {
                 hidden.clear();
@@ -148,7 +175,14 @@ public final class EntityVisualPolicy {
                 entity instanceof ItemEntity ? c.itemVisualDistance :
                 entity instanceof ArmorStand ? c.armorStandVisualDistance : c.mobVisualDistance;
         if (!(entity instanceof Player)) distance *= scale;
-        return entity.distanceToSqr(x, y, z) > distance * distance ? Reason.DISTANCE : null;
+        int id=entity.getId();
+        double threshold=distant.contains(id)?Math.max(0,distance-2):distance;
+        if (entity.distanceToSqr(x,y,z)>threshold*threshold) {
+            if (distant.size()<c.entityMetadataLimitKiB*16) distant.add(id);
+            return Reason.DISTANCE;
+        }
+        distant.remove(id);
+        return null;
     }
 
     public static double scale() { return scale; }

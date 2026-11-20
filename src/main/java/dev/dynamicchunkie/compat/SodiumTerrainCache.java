@@ -2,11 +2,13 @@ package dev.dynamicchunkie.compat;
 import dev.dynamicchunkie.terrain.TerrainCulling;
 import it.unimi.dsi.fastutil.longs.*;
 import java.util.*;
+import net.caffeinemc.mods.sodium.client.render.chunk.LocalSectionIndex;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
 /** Invalidate command batches only when our decision generation changes; never discard meshes. */
 public final class SodiumTerrainCache {
     // Null value tracks a native region without allocating an exclusion set until its first skip.
     private static final Map<RenderRegion,LongOpenHashSet> regions=new WeakHashMap<>();
+    private static final Map<RenderRegion,Long> validated = new WeakHashMap<>();
     private static long generation=-1,invalidations;
     public static long invalidations() {return invalidations;}
     private SodiumTerrainCache() {}
@@ -32,11 +34,39 @@ public final class SodiumTerrainCache {
     public static void clear(RenderRegion region) {
         var keys=regions.get(region);if(keys!=null)keys.clear();
     }
+    public static void visibilityChanged(RenderRegion region) {
+        validated.remove(region);
+    }
     public static void prepare(long version) {
         if(generation==version)return;
-        generation=version;invalidations++;
-        // Clearing a region's batch map also clears its recorded exclusions through the mixin.
-        // clearAllCachedBatches only clears values through our hook, never this map's membership.
-        for(RenderRegion region:regions.keySet())region.clearAllCachedBatches();
+        generation=version;
+    }
+
+    /** Validate lazily when Sodium actually needs this region's commands. */
+    public static void validate(RenderRegion region) {
+        dev.dynamicchunkie.sections.HotSoftSections.verifyView();
+        Long previous = validated.get(region);
+        if (previous != null && previous == generation) return;
+        validated.put(region, generation);
+        var excluded = regions.get(region);
+        boolean terrain = TerrainCulling.active();
+        boolean filter = dev.dynamicchunkie.sections.HotSoftSections.filtering();
+        if (!terrain && !filter && (excluded == null || excluded.isEmpty())) return;
+        var list = region.getRenderList();
+        var indices = ((dev.dynamicchunkie.mixin.sodium.SodiumSectionCandidatesAccess)(Object)list).dynamicchunkie$geometry();
+        for (int i = 0; i < list.getSectionsWithGeometryCount(); i++) {
+            int index = Byte.toUnsignedInt(indices[i]);
+            int x = region.getOriginX() + 16 * LocalSectionIndex.unpackX(index);
+            int y = region.getOriginY() + 16 * LocalSectionIndex.unpackY(index);
+            int z = region.getOriginZ() + 16 * LocalSectionIndex.unpackZ(index);
+            boolean before = excluded != null && excluded.contains(net.minecraft.core.SectionPos.asLong(x>>4,y>>4,z>>4));
+            boolean after = terrain && TerrainCulling.hide(x,y,z) ||
+                    filter && !dev.dynamicchunkie.sections.HotSoftSections.drawAllowed(x,y,z);
+            if (after != before) {
+                region.clearAllCachedBatches();
+                invalidations++;
+                return;
+            }
+        }
     }
 }

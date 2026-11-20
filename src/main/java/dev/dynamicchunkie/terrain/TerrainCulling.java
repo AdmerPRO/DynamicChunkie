@@ -23,6 +23,10 @@ public final class TerrainCulling {
         }
     }
     private static final Long2ByteLinkedOpenHashMap decisions=new Long2ByteLinkedOpenHashMap();
+    private static final LongOpenHashSet coveredGroups=new LongOpenHashSet();
+    private static long seenGeometry=-1, localRevision;
+    private static int emptyFrames;
+    private static long nextProbe;
     private static final LongOpenHashSet skipped=new LongOpenHashSet();
     private static final LongOpenHashSet candidateSections=new LongOpenHashSet();
     private static final LongOpenHashSet countedRegions=new LongOpenHashSet();
@@ -46,7 +50,7 @@ public final class TerrainCulling {
         boolean measure = settings != null && (settings.diagnosticsEnabled || settings.enableJfrEvents);
         long start = measure ? System.nanoTime() : 0;
         int discarded = decisions.size();
-        boxes=List.of();discovered.clear();decisions.clear();cursor=0;revision=-1;generation++;changedAt=System.nanoTime();
+        emptyFrames=0;nextProbe=0;seenGeometry=-1;boxes=List.of();discovered.clear();decisions.clear();coveredGroups.clear();cursor=0;revision=-1;generation++;changedAt=System.nanoTime();
         if (measure) WorkCoordinator.complete(AnalysisScheduler.Module.TERRAIN_INVALIDATION, start, discarded);
     }
     public static void release() {
@@ -58,6 +62,14 @@ public final class TerrainCulling {
         countedRegions.clear(); countedRegions.trim();
     }
 
+    private static long localRevision(Minecraft client,int x,int y,int z) {
+        var changes=((EnvironmentRevision)client.level).dynamicchunkie$changes();
+        if (seenGeometry!=changes.geometry() || client.level!=world || x!=sx || y!=sy || z!=sz) {
+            localRevision=changes.region(x-8,y-8,z-8,x+8,y+8,z+8,false);
+            seenGeometry=changes.geometry();
+        }
+        return localRevision;
+    }
     public static void tick(Minecraft client) {
         var c=DynamicChunkie.settings();
         if(c==null || !c.enabled || !c.enableTerrainSectionCulling || !dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal() || client.level==null || client.player==null || client.player.isSpectator()) {
@@ -65,12 +77,12 @@ public final class TerrainCulling {
         }
         var camera=client.gameRenderer.mainCamera().position();
         int x=(int)Math.floor(camera.x/16),y=(int)Math.floor(camera.y/16),z=(int)Math.floor(camera.z/16);
-        long current=((EnvironmentRevision)client.level).dynamicchunkie$revision();
+        long current=localRevision(client,x,y,z);
         if(world!=client.level || revision!=current || sx!=x || sy!=y || sz!=z) {
             invalidate();world=client.level;revision=current;sx=x;sy=y;sz=z;
         }
         // Never use newly placed blocks as occluders before their native meshes are ready.
-        if(!client.levelRenderer.hasRenderedAllSections()) {if(!boxes.isEmpty()) {boxes=List.of();decisions.clear();generation++;}return;}
+        if(!client.levelRenderer.hasRenderedAllSections()) {if(!boxes.isEmpty()) {boxes=List.of();decisions.clear();coveredGroups.clear();generation++;}return;}
         if(System.nanoTime()-changedAt<1_000_000_000L)return;
         if (cursor >= OFFSETS.length || discovered.size() >= 128 ||
                 !WorkCoordinator.admit(AnalysisScheduler.Module.TERRAIN_DISCOVERY, 50_000_000L, false)) return;
@@ -90,7 +102,7 @@ public final class TerrainCulling {
         }
         WorkCoordinator.complete(AnalysisScheduler.Module.TERRAIN_DISCOVERY, started, observedOcclusionSkips);
         observedOcclusionSkips=0;
-        if(boxes.size()!=discovered.size()) {boxes=List.copyOf(discovered);decisions.clear();generation++;}
+        if(boxes.size()!=discovered.size()) {boxes=List.copyOf(discovered);decisions.clear();coveredGroups.clear();generation++;}
     }
     public static void prepareForDraw() {
         var client=Minecraft.getInstance();
@@ -103,11 +115,12 @@ public final class TerrainCulling {
         }
         var camera=client.gameRenderer.mainCamera().position();
         if(camera.x!=cx || camera.y!=cy || camera.z!=cz) {
+            emptyFrames=0;nextProbe=0;
             changes.record(dev.dynamicchunkie.render.RenderChanges.Kind.CAMERA);
-            decisions.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
+            decisions.clear();coveredGroups.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
         }
-        if((world!=client.level || ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision || !ready) && !boxes.isEmpty()) {
-            boxes=List.of();decisions.clear();generation++;
+        if((world!=client.level || localRevision(client,sx,sy,sz)!=revision || !ready) && !boxes.isEmpty()) {
+            boxes=List.of();decisions.clear();coveredGroups.clear();generation++;
         }
         boolean enabled=active();
         if(wasActive!=enabled || incomplete)generation++;
@@ -124,7 +137,10 @@ public final class TerrainCulling {
     public static void beginFrame() {
         skipped.clear();candidateSections.clear();countedRegions.clear();candidates=0;checks=0;hookCalls=0;spentNanos=0;
     }
-    public static void endFrame() {lastSkipped=skipped.size();lastHooks=hookCalls;lastCandidates=candidates;}
+    public static void endFrame() {
+        if (!skipped.isEmpty()) {emptyFrames=0;nextProbe=0;}
+        else if (checks>0 && ++emptyFrames>=30) nextProbe=System.nanoTime()+250_000_000L;
+        lastSkipped=skipped.size();lastHooks=hookCalls;lastCandidates=candidates;}
     public static boolean metricsEnabled() {
         var c=DynamicChunkie.settings();return dev.dynamicchunkie.benchmark.FrameCapture.recording() || c!=null && (c.profilerOverlay || c.enabled && (c.enableTerrainSectionCulling || c.enableHotSoftSections));
     }
@@ -146,17 +162,30 @@ public final class TerrainCulling {
         var client=Minecraft.getInstance();var c=DynamicChunkie.settings();
         if(!client.isSameThread() || !active() || c==null ||
                 boxes.isEmpty() || client.level==null || client.level!=world ||
-                ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision)return false;
+                localRevision(client,sx,sy,sz)!=revision)return false;
         Vec3 camera=client.gameRenderer.mainCamera().position();
         if(camera.x!=cx || camera.y!=cy || camera.z!=cz) {
-            decisions.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
+            decisions.clear();coveredGroups.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
         }
         long key=SectionPos.asLong(x>>4,y>>4,z>>4);
         byte cached=decisions.get(key);
+        if (cached==0 && emptyFrames>=30 && System.nanoTime()<nextProbe) {incomplete=true;return false;}
         if(cached==0 && decisions.size()<8192 && (checks>=c.terrainChecksPerFrame || spentNanos>=1_000_000L))incomplete=true;
         if(cached==0 && decisions.size()<8192 && checks<c.terrainChecksPerFrame && spentNanos<1_000_000L && !boxes.isEmpty()) {
-            long started=System.nanoTime();checks++;boolean hidden=false;
-            for(Box box:boxes)if(SectionShadow.covers(cx,cy,cz,box.x,box.y,box.z,x,y,z)) {hidden=true;break;}
+            long started=System.nanoTime();checks++;
+            int gx=x&~31, gy=y&~31, gz=z&~31;
+            long group=SectionPos.asLong(gx>>5,gy>>5,gz>>5);
+            boolean hidden=coveredGroups.contains(group);
+            if (!hidden) for(Box box:boxes) {
+                if (box.x+16<Math.min(cx,x-2) || box.x>Math.max(cx,x+18) ||
+                        box.y+16<Math.min(cy,y-2) || box.y>Math.max(cy,y+18) ||
+                        box.z+16<Math.min(cz,z-2) || box.z>Math.max(cz,z+18)) continue;
+                if (!SectionShadow.covers(cx,cy,cz,box.x,box.y,box.z,x,y,z)) continue;
+                hidden=true;
+                if (coveredGroups.size()<1024 && SectionShadow.covers(cx,cy,cz,box.x,box.y,box.z,gx,gy,gz,32))
+                    coveredGroups.add(group);
+                break;
+            }
             cached=(byte)(hidden?2:1);
             decisions.put(key,cached);spentNanos+=System.nanoTime()-started;
         }

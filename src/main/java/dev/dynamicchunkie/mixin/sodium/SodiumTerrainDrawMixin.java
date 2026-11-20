@@ -15,7 +15,7 @@ abstract class SodiumTerrainDrawMixin {
         var region=((ChunkRenderList)(Object)this).getRegion();
         dev.dynamicchunkie.compat.SodiumTerrainCache.track(region);
         dev.dynamicchunkie.compat.SodiumTerrainCache.count(region);
-        if(!TerrainCulling.active() && !dev.dynamicchunkie.sections.HotSoftSections.active())return source;
+        if(reverse || (!TerrainCulling.active() && !dev.dynamicchunkie.sections.HotSoftSections.filtering()))return source;
         return new ByteIterator() {
             private int next=-1;
             public boolean hasNext() {

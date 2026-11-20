@@ -26,6 +26,10 @@ public final class SodiumHotSoft implements SectionBackend {
         return manager == null ? null : (net.caffeinemc.mods.sodium.client.render.chunk.RenderSection)
                 ((SodiumDistanceAccess)(Object)manager).dynamicchunkie$sectionAt(x,y,z);
     }
+    public static void visibilityChanged(int x,int y,int z) {
+        var section=section(x,y,z);
+        if (section!=null) SodiumTerrainCache.visibilityChanged(section.getRegion());
+    }
     private static boolean allocated(net.caffeinemc.mods.sodium.client.render.chunk.RenderSection section,
                                      net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass pass) {
         var storage = section.getRegion().getStorage(pass);

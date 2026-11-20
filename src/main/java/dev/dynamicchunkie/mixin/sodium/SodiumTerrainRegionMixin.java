@@ -8,10 +8,14 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.*;
 @Pseudo @Mixin(value=RenderRegion.class,remap=false)
 abstract class SodiumTerrainRegionMixin {
+    @Inject(method="getCachedBatch",at=@At("HEAD"))
+    private void dynamicchunkie$validate(TerrainRenderPass pass,CallbackInfoReturnable<MultiDrawBatch> cir) {
+        SodiumTerrainCache.validate((RenderRegion)(Object)this);
+    }
     @Inject(method="getCachedBatch",at=@At("RETURN"))
     private void dynamicchunkie$cached(TerrainRenderPass pass,CallbackInfoReturnable<MultiDrawBatch> cir) {
         if(cir.getReturnValue()!=null)SodiumTerrainCache.cached((RenderRegion)(Object)this);
     }
-    @Inject(method={"clearAllCachedBatches","clearCachedBatchFor"},at=@At("HEAD"))
+    @Inject(method="clearAllCachedBatches",at=@At("HEAD"))
     private void dynamicchunkie$clear(CallbackInfo ci) {SodiumTerrainCache.clear((RenderRegion)(Object)this);}
 }

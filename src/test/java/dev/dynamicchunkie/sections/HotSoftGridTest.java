@@ -16,6 +16,19 @@ class HotSoftGridTest {
         assertEquals(HotSoftGrid.State.HOT,grid.state(1,0,0));
         grid.clear();assertEquals(HotSoftGrid.State.COLD,grid.state(0,0,0));
     }
+    @Test void removingOneHotCellPreservesTheSharedHalo() {
+        var grid=new HotSoftGrid();
+        var next=new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        next.add(HotSoftGrid.key(0,0,0));
+        next.add(HotSoftGrid.key(2,0,0));
+        assertTrue(grid.update(next));
+        assertFalse(grid.update(next));
+        next.remove(HotSoftGrid.key(0,0,0));
+        assertTrue(grid.update(next));
+        assertEquals(HotSoftGrid.State.COLD,grid.state(-1,0,0));
+        assertEquals(HotSoftGrid.State.SOFT,grid.state(1,0,0));
+        assertEquals(26,grid.softCount());
+    }
     @Test void negativeAndWorldBorderCoordinatesRoundTrip() {
         for(int x:new int[]{-1875000,-1,0,1875000})for(int y:new int[]{-64,-1,0,320})for(int z:new int[]{-1875000,-1,1875000}) {
             long key=HotSoftGrid.key(x,y,z);assertEquals(x,HotSoftGrid.x(key));assertEquals(y,HotSoftGrid.y(key));assertEquals(z,HotSoftGrid.z(key));

@@ -23,8 +23,10 @@ public final class WorkCoordinator {
     public static void complete(AnalysisScheduler.Module module,long start,long benefits) {
         scheduler.complete(module,start,benefits);
         var c=DynamicChunkie.settings();long now=System.nanoTime();int i=module.ordinal();
-        if(c.enableJfrEvents && now-lastEvent[i]>=1_000_000_000L && EventType.getEventType(ModuleWorkEvent.class).isEnabled()) {
-            var event=new ModuleWorkEvent();event.module=module.name();event.durationNanos=Math.max(0,now-start);event.benefits=benefits;event.commit();lastEvent[i]=now;
+        if(c.enableJfrEvents && (lastEvent[i]==0 || now-lastEvent[i]>=1_000_000_000L)) {
+            lastEvent[i]=now;
+            if (!EventType.getEventType(ModuleWorkEvent.class).isEnabled()) return;
+            var event=new ModuleWorkEvent();event.module=module.name();event.durationNanos=Math.max(0,now-start);event.benefits=benefits;event.commit();
         }
     }
     public static java.util.List<AnalysisScheduler.Sample> snapshot() {return scheduler.snapshot();}

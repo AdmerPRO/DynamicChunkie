@@ -7,20 +7,19 @@ import net.fabricmc.loader.api.FabricLoader;
  * No chunk data or off-world GPU buffers are kept in a separate cache.
  */
 public final class RenderCache {
-    private static DynamicChunkieConfig config;
     private static boolean sodium;
     private static boolean sodiumCompatible;
     private static long preservedChanges;
 
     private RenderCache() {}
-    public static void configure(DynamicChunkieConfig value) {
-        config = value;
+    public static void configure() {
         sodium = FabricLoader.getInstance().isModLoaded("sodium");
         sodiumCompatible = dev.dynamicchunkie.mixin.CompatibilityMixinPlugin.supportedSodium();
         if (sodium && !sodiumCompatible) DynamicChunkie.LOG.warn("Unsupported Sodium version: automatic RD changes are suspended to avoid renderer reload flashes");
     }
-    public static boolean enabled() { return config != null && !sodium && config.enabled && config.preserveRenderCache; }
+    public static boolean enabled() { var config=DynamicChunkie.settings(); return config != null && !sodium && config.enabled && config.preserveRenderCache; }
     public static boolean sodiumEnabled() {
+        var config=DynamicChunkie.settings();
         return config != null && sodiumCompatible && config.enabled && config.preserveRenderCache;
     }
     public static boolean sodiumSupported() {return sodiumCompatible;}
@@ -42,6 +41,7 @@ public final class RenderCache {
         int height=24;
         var client=net.minecraft.client.Minecraft.getInstance();
         if (client.level!=null) height=client.level.getSectionsCount();
+        var config=DynamicChunkie.settings();
         return config.enableMemoryManagement ?
                 dev.dynamicchunkie.adaptive.MemoryBudget.reservationRadius(actual,config.maxRenderDistance,height,config.cacheMemoryLimitMb) :
                 Math.max(actual,config.maxRenderDistance);

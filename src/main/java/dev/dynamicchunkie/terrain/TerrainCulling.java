@@ -42,8 +42,22 @@ public final class TerrainCulling {
         return values.toArray(int[][]::new);
     }
     public static void invalidate() {
+        var settings = DynamicChunkie.settings();
+        boolean measure = settings != null && (settings.diagnosticsEnabled || settings.enableJfrEvents);
+        long start = measure ? System.nanoTime() : 0;
+        int discarded = decisions.size();
         boxes=List.of();discovered.clear();decisions.clear();cursor=0;revision=-1;generation++;changedAt=System.nanoTime();
+        if (measure) WorkCoordinator.complete(AnalysisScheduler.Module.TERRAIN_INVALIDATION, start, discarded);
     }
+    public static void release() {
+        invalidate();
+        world = null;
+        decisions.trim();
+        skipped.clear(); skipped.trim();
+        candidateSections.clear(); candidateSections.trim();
+        countedRegions.clear(); countedRegions.trim();
+    }
+
     public static void tick(Minecraft client) {
         var c=DynamicChunkie.settings();
         if(c==null || !c.enabled || !c.enableTerrainSectionCulling || !dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal() || client.level==null || client.player==null || client.player.isSpectator()) {

@@ -2,7 +2,7 @@ package dev.dynamicchunkie.runtime;
 
 /** Shared cooperative tick budget, staggered deadlines and bounded evidence-based cooldowns. */
 public final class AnalysisScheduler {
-    public enum Module { ENVIRONMENT, ENTITY_OCCLUSION, TERRAIN_DISCOVERY, ENTITY_SELECTION, CACHE_MAINTENANCE }
+    public enum Module { ENVIRONMENT, ENTITY_OCCLUSION, TERRAIN_DISCOVERY, ENTITY_SELECTION, CACHE_MAINTENANCE, TERRAIN_INVALIDATION }
     public record Sample(Module module, long calls, long totalNs, double meanMicros, long benefits, int cooldownMultiplier) {}
     private final NanoClock clock;
     private final WorkBudget budget;

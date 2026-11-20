@@ -9,18 +9,32 @@ public final class EnvironmentCache {
     private record Entry(EnvironmentScore result,long time,long revision) {}
     private LinkedHashMap<Key,Entry> entries=new LinkedHashMap<>(16,.75f,true);
     private LinkedHashMap<Key,Long> ageOrder = new LinkedHashMap<>();
+    private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<Set<Key>> byChunk =
+            new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
     private long hits;
+    private static long chunk(int x, int z) { return (long)x << 32 | Integer.toUnsignedLong(z); }
+    private static long chunk(Key key) { return chunk(key.x >> 6,key.z >> 6); }
+
+    private void remove(Key key) {
+        entries.remove(key);
+        ageOrder.remove(key);
+        long chunk = chunk(key);
+        var keys = byChunk.get(chunk);
+        keys.remove(key);
+        if (keys.isEmpty()) byChunk.remove(chunk);
+    }
     public EnvironmentScore get(Key key,long now,long revision,int ttlMs) {
         Entry value=entries.get(key);
         if (value==null) return null;
-        if (value.revision!=revision || now-value.time>ttlMs*1_000_000L) {entries.remove(key);ageOrder.remove(key);return null;}
+        if (value.revision!=revision || now-value.time>ttlMs*1_000_000L) {remove(key);return null;}
         hits++;return value.result;
     }
     public void put(Key key,EnvironmentScore value,long now,long revision,int maxEntries,long budgetBytes) {
         // 1 KiB conservative charge covers key, result, map nodes and references.
         int limit=(int)Math.max(1,Math.min(maxEntries,budgetBytes/1024));
         ageOrder.putLast(key, now);
-        entries.put(key,new Entry(value,now,revision));
+        if (entries.put(key,new Entry(value,now,revision)) == null)
+            byChunk.computeIfAbsent(chunk(key), ignored -> new HashSet<>()).add(key);
         while (entries.size()>limit) {
             Key victim=null;double cost=-1;int age=entries.size();
             for (Key candidate:entries.keySet()) {
@@ -28,7 +42,7 @@ public final class EnvironmentCache {
                 double priority=age--+Math.min(1024,(dx*dx+dy*dy+dz*dz)/256);
                 if (priority>cost) {cost=priority;victim=candidate;}
             }
-            entries.remove(victim);ageOrder.remove(victim);
+            remove(victim);
         }
     }
     public int expire(long now, int ttlMs, int limit) {
@@ -37,20 +51,25 @@ public final class EnvironmentCache {
             var oldest = ageOrder.firstEntry();
             // Access-order reads would change the LRU ranking. The timestamp index is independent.
             if (now-oldest.getValue() <= ttlMs*1_000_000L) break;
-            ageOrder.pollFirstEntry();
-            entries.remove(oldest.getKey());
+            remove(oldest.getKey());
             removed++;
         }
         return removed;
     }
     public void removeChunk(int x, int z) {
-        entries.keySet().removeIf(key -> {
-            if ((key.x >> 6) != x || (key.z >> 6) != z) return false;
+        var keys = byChunk.remove(chunk(x,z));
+        if (keys != null) for (var key : keys) {
+            entries.remove(key);
             ageOrder.remove(key);
-            return true;
-        });
+        }
     }
-    public void clear() {if (!entries.isEmpty()) {entries = new LinkedHashMap<>(16,.75f,true);ageOrder = new LinkedHashMap<>();}}
+    public void clear() { entries.clear(); ageOrder.clear(); byChunk.clear(); }
+    public void release() {
+        entries = new LinkedHashMap<>(16,.75f,true);
+        ageOrder = new LinkedHashMap<>();
+        byChunk.clear();
+        byChunk.trim();
+    }
     public int size() {return entries.size();}
     public long hits() {return hits;}
     public long chargedBytes() {return entries.size()*1024L;}

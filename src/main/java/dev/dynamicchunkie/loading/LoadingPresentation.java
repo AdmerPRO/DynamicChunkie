@@ -10,11 +10,11 @@ public final class LoadingPresentation {
     private static final ThreadLocal<Integer> INPUT_DEPTH=ThreadLocal.withInitial(() -> 0);
     private LoadingPresentation() {}
     public static boolean simple() {
-        var config=DynamicChunkie.configOrNull();
+        var config=DynamicChunkie.settings();
         return config!=null && config.enabled && config.simpleLoadingScreens;
     }
     public static boolean readyForInput() {
-        var config=DynamicChunkie.configOrNull();
+        var config=DynamicChunkie.settings();
         if (config==null || !config.enabled || !config.simpleLoadingScreens || !config.loadingInputPassthrough) return false;
         var client=Minecraft.getInstance();
         if (client.level==null || client.player==null) return false;

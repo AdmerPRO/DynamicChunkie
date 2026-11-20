@@ -6,7 +6,7 @@ final class StableTarget {
     private long pendingSince;
 
     @SuppressWarnings("PMD.UnusedAssignment") // pending is consumed across successive update calls.
-    int update(int candidate, long now, DynamicChunkieConfig config) {
+    int update(int candidate, long now, RuntimeSettings config) {
         candidate = config.bound(candidate);
         if (accepted < config.minRenderDistance || accepted > config.maxRenderDistance) {
             accepted = candidate;
@@ -25,7 +25,7 @@ final class StableTarget {
         }
         return accepted;
     }
-    int restrict(int candidate,DynamicChunkieConfig config) {
+    int restrict(int candidate,RuntimeSettings config) {
         int bounded=config.bound(candidate);
         accepted=accepted<config.minRenderDistance?bounded:Math.min(accepted,bounded);
         pending=-1;

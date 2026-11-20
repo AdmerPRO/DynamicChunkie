@@ -13,7 +13,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import dev.dynamicchunkie.DynamicChunkieConfig;
+import dev.dynamicchunkie.DynamicChunkie;
 
 /**
  * CPU visibility estimates only. No entities, ticks, networking or world data are removed.
@@ -21,11 +21,10 @@ import dev.dynamicchunkie.DynamicChunkieConfig;
  */
 public final class EntityCulling {
     private static final long MAX_AGE = 500_000_000L;
-    private final DynamicChunkieConfig config;
     private final boolean externalCuller = FabricLoader.getInstance().isModLoaded("entityculling");
-    private final IdentityHashMap<Entity, State> states = new IdentityHashMap<>();
-    private final Set<Entity> scheduled=Collections.newSetFromMap(new IdentityHashMap<>());
-    private final ArrayDeque<Entity> queue = new ArrayDeque<>();
+    private IdentityHashMap<Entity, State> states = new IdentityHashMap<>();
+    private Set<Entity> scheduled=Collections.newSetFromMap(new IdentityHashMap<>());
+    private ArrayDeque<Entity> queue = new ArrayDeque<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private final VoxelOcclusion.Blocks blocks = this::blockAt;
     private net.minecraft.client.multiplayer.ClientLevel world;
@@ -36,23 +35,32 @@ public final class EntityCulling {
         long checkedAt;
         int blockedSamples;
     }
-    public EntityCulling(DynamicChunkieConfig config) { this.config = config; }
     public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; snapshotAt = 0; }
+    public void release() {
+        clear();
+        states = new IdentityHashMap<>();
+        scheduled = Collections.newSetFromMap(new IdentityHashMap<>());
+        queue = new ArrayDeque<>();
+        observedSkips = 0;
+    }
     public void forget(Entity entity) {
         if (scheduled.remove(entity)) queue.remove(entity);
         states.remove(entity);
     }
 
-    public boolean enabled() { return config.enabled && config.enableEntityCulling && !externalCuller; }
+    public boolean enabled() { var config=DynamicChunkie.settings(); return config != null && config.enabled && config.enableEntityCulling && !externalCuller; }
 
     public void tick(Minecraft client) {
         if (!enabled() || client.level == null || client.player == null) { clear(); return; }
         if (world != client.level) { clear(); world = client.level; }
         if (!WorkCoordinator.admit(AnalysisScheduler.Module.ENTITY_OCCLUSION, 50_000_000L, false)) return;
+        var config=DynamicChunkie.settings();
         long now = System.nanoTime();
-        if (now - snapshotAt > 500_000_000L || queue.isEmpty()) {
+        if (snapshotAt == 0 || now - snapshotAt > 500_000_000L) {
             queue.clear();scheduled.clear();
+            int scanned = 0;
             for (Entity entity : world.entitiesForRendering()) {
+                if ((++scanned & 63) == 0 && !WorkCoordinator.available()) break;
                 if (candidate(entity, client)) {queue.addLast(entity);scheduled.add(entity);}
                 if (queue.size() >= Math.min(2048, config.entityMetadataLimitKiB * 4)) break;
             }
@@ -90,6 +98,7 @@ public final class EntityCulling {
         if (state.camera == null || state.camera.distanceToSqr(camera) > .0625 ||
                 state.position.distanceToSqr(position) > .0625) state.blockedSamples = 0;
         double distance = entity.distanceToSqr(camera);
+        var config=DynamicChunkie.settings();
         boolean blocked = distance >= 64 && distance <= config.entityCullingDistance * config.entityCullingDistance;
         AABB box = entity.getBoundingBox().inflate(.25);
         if (blocked) blocked = VoxelOcclusion.blocked(camera.x,camera.y,camera.z,

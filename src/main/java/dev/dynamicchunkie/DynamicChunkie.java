@@ -9,14 +9,17 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 import net.minecraft.network.chat.Component;
+import dev.dynamicchunkie.sections.HotSoftSections;
+import dev.dynamicchunkie.terrain.TerrainCulling;
+import dev.dynamicchunkie.visual.EntityVisualPolicy;
+import dev.dynamicchunkie.visual.ParticlePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.jetbrains.annotations.Nullable;
 
 public final class DynamicChunkie implements ClientModInitializer {
     public static final Logger LOG = LoggerFactory.getLogger("DynamicChunkie");
     private static DynamicDistanceManager manager;
-    private static RuntimeSettings settings;
+    private static volatile RuntimeSettings settings;
     public static RuntimeSettings settings(){return settings;}
     public static void publishSettings(){settings=RuntimeSettings.capture(config());}
     private static dev.dynamicchunkie.culling.EntityCulling culling;
@@ -27,18 +30,17 @@ public final class DynamicChunkie implements ClientModInitializer {
         if (manager!=null) manager.onFrame(net.minecraft.client.Minecraft.getInstance());
     }
     public static DynamicDistanceManager distanceManager() {return manager;}
-    public static @Nullable DynamicChunkieConfig configOrNull() {return manager==null?null:manager.config;}
     public static DynamicChunkieConfig config() { return manager.config; }
     public static boolean applyConfig(DynamicChunkieConfig value) {
         return manager.applyConfig(net.minecraft.client.Minecraft.getInstance(), value);
     }
     @Override public void onInitializeClient() {
         var config = DynamicChunkieConfig.load();
-        RenderCache.configure(config);
+        RenderCache.configure();
         manager = new DynamicDistanceManager(config);
         publishSettings();
         dev.dynamicchunkie.visual.VisualRules.configure(config);
-        culling = new dev.dynamicchunkie.culling.EntityCulling(config);
+        culling = new dev.dynamicchunkie.culling.EntityCulling();
         net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player,world,hand,entity,hit) -> {
             if (player==net.minecraft.client.Minecraft.getInstance().player) manager.noteCombat();
             return net.minecraft.world.InteractionResult.PASS;
@@ -48,9 +50,9 @@ public final class DynamicChunkie implements ClientModInitializer {
             try {
                 manager.tick(client);
                 culling.tick(client);
-                dev.dynamicchunkie.terrain.TerrainCulling.tick(client);
-                dev.dynamicchunkie.visual.ParticlePolicy.tick(client);
-                dev.dynamicchunkie.visual.EntityVisualPolicy.tick(client);
+                TerrainCulling.tick(client);
+                ParticlePolicy.tick(client);
+                EntityVisualPolicy.tick(client);
                 manager.maintainCache();
             } finally {
                 WorkCoordinator.endTick();
@@ -60,13 +62,24 @@ public final class DynamicChunkie implements ClientModInitializer {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> {
             var pos = chunk.getPos();
             manager.unload(level, pos.x(), pos.z());
-            dev.dynamicchunkie.sections.HotSoftSections.unload(level, pos.x(), pos.z());
+            HotSoftSections.unload(level, pos.x(), pos.z());
         });
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, level) -> culling.forget(entity));
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
+            culling.forget(entity);
+            EntityVisualPolicy.forget(entity.getId());
+        });
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> LOG.info("DynamicChunkie client initialized"));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { manager.restore(client); WorkCoordinator.reset(); DebugOverlay.clear(); culling.clear(); dev.dynamicchunkie.sections.HotSoftSections.clear();
-            dev.dynamicchunkie.visual.EntityVisualPolicy.release();dev.dynamicchunkie.visual.ParticlePolicy.invalidate(); });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            manager.restore(client);
+            WorkCoordinator.reset();
+            DebugOverlay.clear();
+            culling.release();
+            TerrainCulling.release();
+            HotSoftSections.clear();
+            EntityVisualPolicy.release();
+            ParticlePolicy.invalidate();
+        });
         DebugOverlay.register();
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->
             dispatcher.register(literal("dynamicchunkie")
@@ -91,14 +104,21 @@ public final class DynamicChunkie implements ClientModInitializer {
                     return 1;
                 })))
                 .then(literal("toggle").executes(ctx -> {
-                    manager.toggle(ctx.getSource().getClient());
+                    if (!manager.toggle(ctx.getSource().getClient())) {
+                        ctx.getSource().sendFeedback(Component.literal("Cannot save the enabled setting."));
+                        return 0;
+                    }
                     ctx.getSource().sendFeedback(Component.literal("DynamicChunkie enabled: " + config.enabled));
                     return 1;
                 }))
                 .then(literal("debug").executes(ctx -> {
                     config.debugMode = !config.debugMode;
+                    if (!config.save()) {
+                        config.debugMode = !config.debugMode;
+                        ctx.getSource().sendFeedback(Component.literal("Cannot save the debug setting."));
+                        return 0;
+                    }
                     publishSettings();
-                    config.save();
                     ctx.getSource().sendFeedback(Component.literal("DynamicChunkie debug: " + config.debugMode));
                     return 1;
                 }))));

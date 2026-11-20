@@ -5,7 +5,11 @@ import net.minecraft.client.Minecraft;
 public final class EnvironmentAnalyzer {
     private static final double[] SCORE_KNOTS={0,.13,.30,.65,.82,1};
     private final RaycastAnalyzer rays = new RaycastAnalyzer();
-    public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig c) {
+    public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig draft) {
+        return analyze(client, RuntimeSettings.capture(draft));
+    }
+
+    public EnvironmentScore analyze(Minecraft client, RuntimeSettings c) {
         var p = client.player;
         var r = rays.sample(client.level, p);
         boolean sky = c.enableSkyDetection && client.level.canSeeSky(p.blockPosition());
@@ -43,7 +47,7 @@ public final class EnvironmentAnalyzer {
                 Math.max(0, (horizontal - .55) / .45) : 0;
         return Math.max(0, Math.min(1, base + bonus));
     }
-    static int target(EnvironmentScore environment, double smoothed, DynamicChunkieConfig c) {
+    static int target(EnvironmentScore environment, double smoothed, RuntimeSettings c) {
         double cap = c.surfaceDistance;
         if (c.enableSkyDetection && !environment.sky()) cap = c.undergroundOpenDistance;
         else if (c.enableAltitudeFactor && environment.horizontal() > .55) {
@@ -54,7 +58,7 @@ public final class EnvironmentAnalyzer {
         }
         return c.bound((int)Math.round(Math.min(cap, target(smoothed, c))));
     }
-    static double target(double score, DynamicChunkieConfig c) {
+    static double target(double score, RuntimeSettings c) {
         for (int i = 1; i < SCORE_KNOTS.length; i++)
             if (score <= SCORE_KNOTS[i]) {
                 int lower=profileValue(i-1,c),upper=profileValue(i,c);
@@ -62,7 +66,7 @@ public final class EnvironmentAnalyzer {
             }
         return c.highAltitudeDistance;
     }
-    private static int profileValue(int index,DynamicChunkieConfig c) {
+    private static int profileValue(int index,RuntimeSettings c) {
         return switch(index) {
             case 0 -> c.tunnelDistance;
             case 1 -> c.smallCaveDistance;

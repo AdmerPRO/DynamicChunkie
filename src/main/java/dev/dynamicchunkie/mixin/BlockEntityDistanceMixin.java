@@ -13,7 +13,7 @@ abstract class BlockEntityDistanceMixin {
     private void dynamicchunkie$distance(BlockEntity block,float tick,
             net.minecraft.client.renderer.feature.ModelFeatureRenderer.CrumblingOverlay overlay,
             boolean flag,CallbackInfoReturnable<?> cir) {
-        var c=DynamicChunkie.configOrNull();
+        var c=DynamicChunkie.settings();
         if(c==null || !c.enabled || !c.enableAdaptiveEntityDistance)return;
         double limit=EntityVisualPolicy.blockDistance();
         var camera=Minecraft.getInstance().gameRenderer.mainCamera().position();

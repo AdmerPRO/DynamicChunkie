@@ -5,10 +5,19 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
 /** One reason per entity per extracted frame. Native rejections may also include distance or renderer policy. */
 public final class EntityRejections {
-    public enum Reason { NATIVE, TYPE_LIMIT, DISTANCE, OCCLUSION }
+    public enum Reason { NATIVE_OTHER, NATIVE_PREDICATE, NATIVE_FRUSTUM, TYPE_LIMIT, DISTANCE, OCCLUSION }
     private static final IntOpenHashSet counted = new IntOpenHashSet();
     private static final int[] counts = new int[Reason.values().length];
     private static boolean enabled;
+    private static int nativeId;
+    private static Reason hint;
+    public static void clearHint() { hint = null; }
+    public static void nativeHint(int id, Reason reason) {
+        if (enabled) { nativeId = id; hint = reason; }
+    }
+    public static Reason nativeReason(int id) {
+        return nativeId == id && hint != null ? hint : Reason.NATIVE_OTHER;
+    }
     private EntityRejections() {}
     public static void begin() {
         var settings = DynamicChunkie.settings();

@@ -83,5 +83,18 @@
   "dynamicchunkie.config.particleImportant": "Important: %s",
   "dynamicchunkie.config.protectImportantEntities": "Protect named / glowing entities",
   "dynamicchunkie.config.enableHotSoftSections": "Hot / soft sections (experimental)",
-  "dynamicchunkie.config.hotSoftScanBudgetMicros": "Section scan budget (microseconds)"
+  "dynamicchunkie.config.hotSoftScanBudgetMicros": "Section scan budget (microseconds)",
+  "dynamicchunkie.config.enableColdGeometryEviction": "Retire cold opaque meshes",
+  "dynamicchunkie.config.coldGeometryGraceMs": "Cold mesh grace (ms)",
+  "dynamicchunkie.config.performanceTools": "Performance tools",
+  "dynamicchunkie.config.enableAsyncSelection": "Background entity selection",
+  "dynamicchunkie.config.diagnosticsEnabled": "Detailed diagnostics",
+  "dynamicchunkie.config.enableJfrEvents": "JFR module events",
+  "dynamicchunkie.config.enableAdaptiveModuleBudgets": "Adaptive module cooldowns",
+  "dynamicchunkie.config.hudRefreshMs": "HUD refresh (ms)",
+  "dynamicchunkie.config.cpuSampleIntervalMs": "CPU sample interval (ms)",
+  "dynamicchunkie.config.sharedAnalysisBudgetMicros": "Tick analysis budget (microseconds)",
+  "dynamicchunkie.config.analysisMetadataLimitKiB": "Analysis metadata (KiB)",
+  "dynamicchunkie.config.entityMetadataLimitKiB": "Entity metadata (KiB)",
+  "dynamicchunkie.config.coldMetadataLimitKiB": "Cold task metadata (KiB)"
 }

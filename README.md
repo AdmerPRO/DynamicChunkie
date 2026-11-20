@@ -397,3 +397,11 @@ overrides, retaining its Fabric loader component. The generated file is base
 Minecraft metadata; it must not replace an inherited Fabric loader definition.
 Launcher-specific installation and unrelated mods require their own compatibility
 checks. Other Minecraft version branches are unchanged.
+
+### Diagnostics and analysis budgets (26.3)
+
+Open **Performance tools** on the terrain page in Mod Menu. The default HUD and CPU sampling interval is 250 ms. The graph still records each frame. CPU samples divide elapsed thread CPU time by the number of intervening frames. GPU utilization reads Minecraft's last published value. Missing GPU data appears as unavailable.
+
+Environment sampling, occlusion checks and entity selection share a cooperative 2,500 µs tick deadline. Native operations already in progress can overrun the deadline. Analysis entries, entity decisions and deferred rebuilds use separate estimated metadata budgets in KiB. The experimental **Retire cold opaque meshes** option is available for the pinned Sodium build with hot/soft sections enabled. After the grace interval (15 seconds by default), Sodium can retire one offscreen, already-deferred opaque mesh per game tick. Among eligible sections the mod prefers distant meshes with smaller native build results. Warm sections request a normal rebuild. Minecraft chunk data, visibility graphs and shared GPU arenas remain owned by the renderer. Releasing a suballocation can make space available to Sodium without changing process VRAM.
+
+Enable detailed diagnostics and use `/dynamicchunkie diagnostics export` to save the latest HUD sample under the instance's `tmp/dynamicchunkie/`. With **JFR module events** enabled, a recording can collect `dev.dynamicchunkie.ModuleWork` up to once per second per module. Background entity selection is optional. Its worker receives copied IDs, numeric type limits and distances. Results carry world, settings and camera revisions and are checked on the client thread.

@@ -36,6 +36,25 @@ public final class VisualPoliciesGameTest implements FabricClientGameTest {
                 if(rejected<8)throw new AssertionError("Cosmetic spawn budget not enforced");
                 if(ParticlePolicy.reject(ParticleTypes.TOTEM_OF_UNDYING,p.x+1000,p.y,p.z))throw new AssertionError("Important particle rejected");
             });
+            context.runOnClient(client -> {
+                var c = DynamicChunkie.config().copy();
+                c.enableAsyncSelection = true;
+                c.diagnosticsEnabled = true;
+                if (!DynamicChunkie.applyConfig(c)) throw new AssertionError("Cannot enable background selection");
+            });
+            context.waitFor(client -> {
+                var camera = client.gameRenderer.mainCamera().position();
+                int hidden = 0;
+                for (var entity : client.level.entitiesForRendering()) {
+                    if (entity.getType() != net.minecraft.world.entity.EntityTypes.COW) continue;
+                    if (EntityVisualPolicy.hide(entity,camera.x,camera.y,camera.z)) {
+                        if (entity.getX() < 11) throw new AssertionError("Background selector hid a nearer cow");
+                        hidden++;
+                    }
+                }
+                return hidden == 1 && DebugOverlay.snapshot().profiler().stream()
+                        .anyMatch(line -> line.text().contains("ENTITY_SELECTION"));
+            },400);
             context.runOnClient(client->{
                 var c=DynamicChunkie.config().copy();c.enableEntityTypeLimits=false;c.mobVisualDistance=8;
                 c.particleTypeBudgets.put("minecraft:smoke",0);DynamicChunkie.applyConfig(c);

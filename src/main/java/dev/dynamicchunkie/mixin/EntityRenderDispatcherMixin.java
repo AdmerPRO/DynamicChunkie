@@ -12,11 +12,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityRenderDispatcher.class)
 abstract class EntityRenderDispatcherMixin {
+    @Inject(method = "shouldRender", at = @At("HEAD"))
+    private void dynamicchunkie$beginDecision(CallbackInfoReturnable<Boolean> result) {
+        EntityRejections.clearHint();
+    }
+
     @Inject(method = "shouldRender", at = @At("RETURN"), cancellable = true)
     private void dynamicchunkie$occluded(Entity entity, Frustum frustum, double x, double y, double z,
             float partialTick, CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValue()) {
-            EntityRejections.record(EntityRejections.Reason.NATIVE, entity.getId());
+            EntityRejections.record(EntityRejections.nativeReason(entity.getId()), entity.getId());
             return;
         }
         var reason = dev.dynamicchunkie.visual.EntityVisualPolicy.rejection(entity, x, y, z);

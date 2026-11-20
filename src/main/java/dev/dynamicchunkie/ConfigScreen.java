@@ -52,7 +52,8 @@ public final class ConfigScreen extends Screen {
         return cachedParticles;
     }
     private int particleStart() {return 14+(types().size()+4)/5;}
-    private int pageCount() {return particleStart()+(particleTypes().size()+2)/3;}
+    private int toolsStart() {return particleStart()+(particleTypes().size()+2)/3;}
+    private int pageCount() {return toolsStart()+2;}
     @Override protected void init() {
         labels.clear();
         row = 0;
@@ -71,7 +72,11 @@ public final class ConfigScreen extends Screen {
                 addRenderableWidget(Button.builder(text("particleTypes"),b->{
                     if(!invalid.isEmpty()) {error=text("invalid");return;}
                     page=particleStart();rebuildWidgets();
-                }).bounds(left,162,rowWidth,20).build());
+                }).bounds(left,162,rowWidth/2-2,20).build());
+                addRenderableWidget(Button.builder(text("performanceTools"),b->{
+                    if (!invalid.isEmpty()) {error=text("invalid");return;}
+                    page=toolsStart();rebuildWidgets();
+                }).bounds(left+rowWidth/2,162,rowWidth/2,20).build());
             }
             case 10 -> {
                 toggle("enableAdaptiveEntityDistance",()->draft.enableAdaptiveEntityDistance,v->draft.enableAdaptiveEntityDistance=v);
@@ -105,7 +110,22 @@ public final class ConfigScreen extends Screen {
                 }
             }
             default -> {
-                if(page<particleStart()) {
+                if (page == toolsStart()) {
+                    toggle("diagnosticsEnabled",()->draft.diagnosticsEnabled,v->draft.diagnosticsEnabled=v);
+                    toggle("enableJfrEvents",()->draft.enableJfrEvents,v->draft.enableJfrEvents=v);
+                    toggle("enableAdaptiveModuleBudgets",()->draft.enableAdaptiveModuleBudgets,v->draft.enableAdaptiveModuleBudgets=v);
+                    integer("hudRefreshMs",draft.hudRefreshMs,v->draft.hudRefreshMs=v);
+                    integer("cpuSampleIntervalMs",draft.cpuSampleIntervalMs,v->draft.cpuSampleIntervalMs=v);
+                    integer("sharedAnalysisBudgetMicros",draft.sharedAnalysisBudgetMicros,v->draft.sharedAnalysisBudgetMicros=v);
+                } else if (page == toolsStart()+1) {
+                    integer("analysisMetadataLimitKiB",draft.analysisMetadataLimitKiB,v->draft.analysisMetadataLimitKiB=v);
+                    integer("entityMetadataLimitKiB",draft.entityMetadataLimitKiB,v->draft.entityMetadataLimitKiB=v);
+                    integer("coldMetadataLimitKiB",draft.coldMetadataLimitKiB,v->draft.coldMetadataLimitKiB=v);
+                    var eviction = toggle("enableColdGeometryEviction",()->draft.enableColdGeometryEviction,v->draft.enableColdGeometryEviction=v);
+                    eviction.active=dev.dynamicchunkie.render.RendererCapabilities.current().coldMeshRetirement();
+                    integer("coldGeometryGraceMs",draft.coldGeometryGraceMs,v->draft.coldGeometryGraceMs=v);
+                    toggle("enableAsyncSelection",()->draft.enableAsyncSelection,v->draft.enableAsyncSelection=v);
+                } else if(page<particleStart()) {
                     var types=types();int start=(page-14)*5;
                     for(int i=start;i<Math.min(types.size(),start+5);i++) {
                         var type=types.get(i);String id=net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
@@ -246,7 +266,7 @@ public final class ConfigScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
         graphics.text(font, title, (width - font.width(title)) / 2, 10, 0xFFFFFFFF);
-        Component pageTitle = page>=particleStart()?text("particleTypes"):page>=14?Component.literal("Entity limits / "+(page-13)):text("page." + page);
+        Component pageTitle = page>=toolsStart()?text("performanceTools"):page>=particleStart()?text("particleTypes"):page>=14?Component.literal("Entity limits / "+(page-13)):text("page." + page);
         graphics.text(font, pageTitle, (width - font.width(pageTitle)) / 2, 45, 0xFFFFFFFF);
         for (int i = 0; i < labels.size(); i++)
             if (labels.get(i) != null) graphics.text(font, font.plainSubstrByWidth(text(labels.get(i)).getString(),rowWidth-98), left, 72 + i * 22, 0xFFFFFFFF);

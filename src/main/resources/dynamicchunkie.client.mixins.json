@@ -11,6 +11,7 @@
     "sodium.RenderSectionManagerMixin",
     "sodium.SodiumRendererAccessor",
     "EntityRenderDispatcherMixin",
+    "EntityRendererDiagnosticsMixin",
     "EnvironmentRevisionMixin",
     "PerformanceFrameMixin",
     "loading.LoadingOverlayMixin",

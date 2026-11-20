@@ -1,6 +1,7 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
+    id 'pmd'
 }
 version = '0.1.0'
 group = 'dev.dynamicchunkie'
@@ -25,6 +26,34 @@ dependencies {
 java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
 tasks.withType(JavaCompile).configureEach { options.release = 25 }
 test { useJUnitPlatform() }
+pmd {
+    toolVersion = '7.28.0'
+    ruleSets = []
+    ruleSetFiles = files('config/pmd.xml')
+    consoleOutput = true
+}
+tasks.withType(Pmd).configureEach {
+    reports { xml.required = true; html.required = true }
+}
+
+// Public Maven coordinates only. Kept separate from build so vulnerability queries stay explicit.
+tasks.register('dependencyInventory') {
+    def outputFile = layout.buildDirectory.file('reports/security/dependencies.json')
+    outputs.file(outputFile)
+    outputs.upToDateWhen { false }
+    doLast {
+        def coordinates = ['compileClasspath', 'runtimeClasspath', 'testRuntimeClasspath'].collectMany { name ->
+            configurations.getByName(name).incoming.resolutionResult.allComponents.collect { component ->
+                def id = component.id
+                id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier ?
+                    [name: id.group + ':' + id.module, version: id.version] : null
+            }.findAll { it != null }
+        }.unique().sort { a, b -> (a.name + a.version) <=> (b.name + b.version) }
+        def file = outputFile.get().asFile
+        file.parentFile.mkdirs()
+        file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(coordinates))
+    }
+}
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
 
 // Client integration tests run separately and are never included in the distributed mod.

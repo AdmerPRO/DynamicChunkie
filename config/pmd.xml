@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="DynamicChunkie correctness" xmlns="http://pmd.sourceforge.net/ruleset/2.0.0">
+    <description>Focused dead-code, import, resource and exception checks; no formatting mandate.</description>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedAssignment"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+        <properties>
+            <!-- Mixin entrypoints are invoked by transformed bytecode, not source call sites. -->
+            <property name="ignoredAnnotations" value="org.spongepowered.asm.mixin.injection.Inject,org.spongepowered.asm.mixin.injection.Redirect,org.spongepowered.asm.mixin.injection.ModifyArg,org.spongepowered.asm.mixin.injection.ModifyVariable,org.spongepowered.asm.mixin.injection.ModifyConstant,com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod,com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation,com.llamalad7.mixinextras.injector.ModifyExpressionValue"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+    <rule ref="category/java/errorprone.xml/CloseResource">
+        <properties>
+            <!-- Minecraft owns this process-wide singleton; mods must never close it. -->
+            <property name="allowedResourceMethodPatterns" value="net.minecraft.client.Minecraft#getInstance()"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+</ruleset>

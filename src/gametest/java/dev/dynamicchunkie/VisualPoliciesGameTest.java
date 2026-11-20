@@ -26,6 +26,11 @@ public final class VisualPoliciesGameTest implements FabricClientGameTest {
                 return found==3 && hidden==1;
             },200);
             context.runOnClient(client->{
+                var camera=client.gameRenderer.mainCamera().position();
+                for(var entity:client.level.entitiesForRendering())
+                    if(entity.getType().getDescriptionId().equals("entity.minecraft.cow") &&
+                            EntityVisualPolicy.hide(entity,camera.x,camera.y,camera.z) && entity.getX()<11)
+                        throw new AssertionError("Nearest-first limit hid a nearer cow");
                 ParticlePolicy.tick(client);var p=client.player.position();int rejected=0;
                 for(int i=0;i<10;i++)if(ParticlePolicy.reject(ParticleTypes.SMOKE,p.x,p.y,p.z))rejected++;
                 if(rejected<8)throw new AssertionError("Cosmetic spawn budget not enforced");

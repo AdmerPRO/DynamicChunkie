@@ -31,6 +31,7 @@ public final class RenderCacheGameTest implements FabricClientGameTest {
             }, 1200);
             var original = context.computeOnClient(client -> client.levelRenderer.viewArea());
             var section = context.computeOnClient(client -> original.getRenderSectionAt(position));
+            @SuppressWarnings("PMD.CloseResource") // Borrowed renderer-owned mesh, retained for identity assertions.
             var mesh = context.computeOnClient(client -> section.getSectionMesh());
             int simulation = context.computeOnClient(client -> client.options.simulationDistance().get());
             long reused = context.computeOnClient(client -> RenderCache.preservedChanges());

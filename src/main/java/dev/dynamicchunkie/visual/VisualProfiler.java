@@ -29,7 +29,7 @@ public final class VisualProfiler {
             String.format(java.util.Locale.ROOT,"Render-thread CPU EMA %.1f ms",perf.cpuMs()),
             "Terrain visible candidates: "+visible+" | extra skipped: "+dev.dynamicchunkie.terrain.TerrainCulling.skipped(),
             "Terrain occluders: "+dev.dynamicchunkie.terrain.TerrainCulling.occluders()+" | cache charged: "+dev.dynamicchunkie.terrain.TerrainCulling.chargedBytes()+" B",
-            "Hot sections: "+dev.dynamicchunkie.sections.HotSoftSections.hotCount()+" | deferred: "+dev.dynamicchunkie.sections.HotSoftSections.pending()+" | scan us: "+dev.dynamicchunkie.sections.HotSoftSections.captureNanos()/1000,
+            "Hot sections: "+dev.dynamicchunkie.sections.HotSoftSections.hotCount()+" | deferred: "+dev.dynamicchunkie.sections.HotSoftSections.pending()+" | retired: "+dev.dynamicchunkie.sections.HotSoftSections.evictions()+" | scan us: "+dev.dynamicchunkie.sections.HotSoftSections.captureNanos()/1000,
             "Extracted entities / block entities: "+entities+" / "+blocks,
             "GPU timing: "+(Double.isNaN(perf.gpuPercent())?"unavailable":String.format(java.util.Locale.ROOT,"%.0f%%",perf.gpuPercent())),
             "Analysis cache charged: "+manager.cacheBytes()+" bytes (geometry VRAM unknown)",

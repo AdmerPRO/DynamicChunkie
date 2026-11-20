@@ -10,6 +10,7 @@ public final class HotSoftGameTest implements FabricClientGameTest {
         try(var world=context.worldBuilder().create()) {
             context.runOnClient(client->{
                 var c=backup.copy();c.enabled=true;c.minRenderDistance=8;c.maxRenderDistance=8;
+                c.enableColdGeometryEviction = RenderCache.sodiumSupported(); c.coldGeometryGraceMs=1000;
                 c.enableHotSoftSections=true;c.hotSoftScanBudgetMicros=10000;c.enableTerrainSectionCulling=false;
                 c.enableTeleportRecovery=false;c.enableFpsAdaptive=false;c.enableHardwareAdaptive=false;
                 if(!DynamicChunkie.applyConfig(c))throw new AssertionError("Cannot apply section settings");
@@ -36,6 +37,12 @@ public final class HotSoftGameTest implements FabricClientGameTest {
                 if(!HotSoftSections.defer(-3,6,0,false))throw new AssertionError("Cold geometry could not be queued again");
                 if(HotSoftSections.defer(0,20,0,false))throw new AssertionError("Initial / missing mesh build deferred");
             });
+            if (RenderCache.sodiumSupported()) {
+                context.waitFor(client -> HotSoftSections.isDeferred(-3,6,0) &&
+                        !dev.dynamicchunkie.render.SectionBackends.current().hasBuiltMesh(-3,6,0),800);
+                if (context.computeOnClient(client -> HotSoftSections.evictions()) == 0)
+                    throw new AssertionError("Native cold allocation was not retired");
+            }
             world.getServer().runCommand("tp @a 0.5 104 8.5 90 0");
             var polls=new java.util.concurrent.atomic.AtomicInteger();
             context.waitFor(client->{
@@ -44,6 +51,7 @@ public final class HotSoftGameTest implements FabricClientGameTest {
                 return HotSoftSections.state(-3,6,0)==HotSoftGrid.State.HOT && !HotSoftSections.isDeferred(-3,6,0);
             },400);
             world.getConnection().waitForChunksRender(false);
+            context.waitFor(client -> dev.dynamicchunkie.render.SectionBackends.current().hasBuiltMesh(-3,6,0),400);
             context.runOnClient(client->{
                 if(!HotSoftSections.drawAllowed(-48,96,0))throw new AssertionError("Revisited hot section hidden");
                 var c=DynamicChunkie.config().copy();c.enableHotSoftSections=false;DynamicChunkie.applyConfig(c);

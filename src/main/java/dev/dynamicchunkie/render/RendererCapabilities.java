@@ -13,6 +13,6 @@ public record RendererCapabilities(boolean visibleSectionTraversal, boolean rebu
     public static RendererCapabilities current() { return Installed.VALUE; }
     static RendererCapabilities detect(boolean sodium, boolean testedSodium, boolean iris) {
         boolean visibility = !iris && (!sodium || testedSodium);
-        return new RendererCapabilities(visibility, visibility, false, true);
+        return new RendererCapabilities(visibility, visibility, visibility && testedSodium, true);
     }
 }

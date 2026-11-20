@@ -19,11 +19,47 @@ public final class SodiumHotSoft implements SectionBackend {
         }
         return true;
     }
+    private static net.caffeinemc.mods.sodium.client.render.chunk.RenderSection section(int x,int y,int z) {
+        var renderer = SodiumWorldRenderer.instance();
+        if (renderer == null) return null;
+        var manager = ((SodiumRendererAccessor)(Object)renderer).dynamicchunkie$getManager();
+        return manager == null ? null : (net.caffeinemc.mods.sodium.client.render.chunk.RenderSection)
+                ((SodiumDistanceAccess)(Object)manager).dynamicchunkie$sectionAt(x,y,z);
+    }
+    private static boolean allocated(net.caffeinemc.mods.sodium.client.render.chunk.RenderSection section,
+                                     net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass pass) {
+        var storage = section.getRegion().getStorage(pass);
+        return storage != null && ((SodiumMeshAllocations)(Object)storage).dynamicchunkie$vertices()[section.getSectionIndex()] != null;
+    }
     @Override public boolean hasBuiltMesh(int x,int y,int z) {
-        var renderer=SodiumWorldRenderer.instance();if(renderer==null)return false;
-        var manager=((SodiumRendererAccessor)(Object)renderer).dynamicchunkie$getManager();if(manager==null)return false;
-        var section=(net.caffeinemc.mods.sodium.client.render.chunk.RenderSection)((SodiumDistanceAccess)(Object)manager).dynamicchunkie$sectionAt(x,y,z);
-        return section!=null && section.isBuilt() && !section.isInvisible();
+        var section = section(x,y,z);
+        if (section == null || !section.isBuilt() || section.isInvisible()) return false;
+        for (var pass : net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses.ALL)
+            if (allocated(section,pass)) return true;
+        return false;
+    }
+    public static long opaqueMeshCost(int x,int y,int z) {
+        var section = section(x,y,z);
+        if (section == null || section.isDisposed() || !section.isBuilt() || section.getPendingUpdate() != 0 ||
+                allocated(section,net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses.TRANSLUCENT))
+            return -1;
+        var jobs = (SodiumMeshJobs)(Object)section;
+        if (!jobs.dynamicchunkie$jobs().isEmpty() || jobs.dynamicchunkie$buildOutput() != null ||
+                jobs.dynamicchunkie$sortOutput() != null) return -1;
+        return section.getLastMeshResultSize();
+    }
+    public static boolean retire(int x,int y,int z) {
+        var section = section(x,y,z);
+        if (section == null || opaqueMeshCost(x,y,z) < 0) return false;
+        var region = section.getRegion();
+        boolean released = false;
+        for (var pass : net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses.ALL) {
+            if (!allocated(section,pass)) continue;
+            region.clearCachedBatchFor(pass);
+            region.getStorage(pass).removeData(section.getSectionIndex());
+            released = true;
+        }
+        return released;
     }
     @Override public void requestRebuild(int x,int y,int z) {
         var renderer=SodiumWorldRenderer.instance();if(renderer==null)return;

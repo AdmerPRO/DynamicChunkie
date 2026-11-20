@@ -30,7 +30,10 @@
     "FrustumBoundsAccess",
     "HotSoftUpdateMixin",
     "sodium.SodiumSectionCandidatesAccess",
-    "sodium.SodiumHotSoftUpdateMixin"
+    "sodium.SodiumHotSoftUpdateMixin",
+    "sodium.SodiumMeshAllocations",
+    "sodium.SodiumMeshJobs",
+    "sodium.SodiumRegionMaintenance"
   ],
   "injectors": {
     "defaultRequire": 1

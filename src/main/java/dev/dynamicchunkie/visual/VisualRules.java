@@ -18,6 +18,7 @@ public final class VisualRules {
     public static void configure(DynamicChunkieConfig config) {
         ENTITIES.configure(config.entityTypeLimits, Set.of());
         PARTICLES.configure(config.particleTypeBudgets, config.importantParticleTypes);
+        EntityModelCosts.clear();
         EntityVisualPolicy.invalidate();
         ParticlePolicy.invalidate();
     }

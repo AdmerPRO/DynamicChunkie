@@ -24,29 +24,35 @@ public final class EntityVisualPolicy {
     private static java.util.concurrent.CompletableFuture<SelectionSnapshot.Result> pending;
     private static SelectionSnapshot.Stamp applied;
     private static long membershipRevision;
+    public static void costChanged() {membershipRevision++;selections.clear();}
     public static void entityChanged(Entity entity) {
         var c=DynamicChunkie.settings();
         if (c!=null && c.enabled && c.enableEntityTypeLimits && !c.entityTypeLimits.isEmpty() &&
                 entity.level()==world && VisualRules.entity(entity.getType()).limit()>0) membershipRevision++;
     }
-    private static Iterable<Entity> candidates(Minecraft client) {
+    private static final net.minecraft.world.level.entity.EntityTypeTest<Entity,Entity> ALL_ENTITIES =
+            net.minecraft.world.level.entity.EntityTypeTest.forClass(Entity.class);
+    private static Iterable<Entity> candidates(Minecraft client,int maximum) {
         var c=DynamicChunkie.settings();
         if (!c.enableAdaptiveEntityDistance) return client.level.entitiesForRendering();
         var camera=client.gameRenderer.mainCamera().position();
         double radius=Math.max(c.mobVisualDistance,Math.max(c.itemVisualDistance,c.armorStandVisualDistance))+4;
-        return client.level.getEntities((Entity)null, new net.minecraft.world.phys.AABB(camera,camera).inflate(radius),
-                entity->!(entity instanceof Player) && VisualRules.entity(entity.getType()).limit()>0);
+        var result=new java.util.ArrayList<Entity>();
+        client.level.getEntities(ALL_ENTITIES,new net.minecraft.world.phys.AABB(camera,camera).inflate(radius),
+                entity->!(entity instanceof Player) && VisualRules.entity(entity.getType()).limit()>0,result,maximum+1);
+        return result;
     }
     private static final CloudGovernor clouds = new CloudGovernor();
     public static net.minecraft.client.CloudStatus clouds(net.minecraft.client.CloudStatus selected) {return clouds.limit(selected);}
-    private static double scale = 1;
+    private static double scale=1, particleScale=1;
+    public static double particleScale() {return particleScale;}
 
     private EntityVisualPolicy() {}
 
     public static void invalidate() {
         generation++;
         applied = null;
-        distant.clear(); hidden.clear(); selections.clear(); world = null; observedSkips = 0; scale = 1; clouds.reset();
+        distant.clear(); hidden.clear(); selections.clear(); world = null; observedSkips = 0; scale=particleScale=1; clouds.reset();
     }
 
     public static void forget(int entityId) {
@@ -72,8 +78,9 @@ public final class EntityVisualPolicy {
             double mean = DynamicChunkie.distanceManager().performance().meanMs();
             double desired = VisualBudget.scale(mean, c.targetFps, client.options.framerateLimit().get());
             scale += (desired - scale) * (desired < scale ? .06 : .015);
-            if (c.enableSmartClouds) clouds.update(scale, System.nanoTime()); else clouds.reset();
-        } else scale = 1;
+            particleScale+=(desired-particleScale)*(desired<particleScale?.12:.025);
+            if (c.enableSmartClouds) clouds.update(desired, System.nanoTime()); else clouds.reset();
+        } else {scale=particleScale=1;clouds.reset();}
         if (world != null && world != client.level) invalidate();
         if (applied != null && !applied.equals(stamp(client))) {
             hidden.clear();
@@ -108,7 +115,7 @@ public final class EntityVisualPolicy {
         var camera = client.gameRenderer.mainCamera().position();
         int scanned = 0;
         boolean complete=true;
-        for (Entity entity : candidates(client)) {
+        for (Entity entity : candidates(client,c.entityMetadataLimitKiB*8)) {
             if (++scanned > c.entityMetadataLimitKiB * 8 || ((scanned & 63) == 0 && !WorkCoordinator.available())) {
                 hidden.clear();
                 complete=false;
@@ -116,7 +123,7 @@ public final class EntityVisualPolicy {
             }
             if (entity instanceof Player || c.protectImportantEntities && (entity.isCurrentlyGlowing() || entity.hasCustomName())) continue;
             var type = entity.getType();
-            int limit = VisualRules.entity(type).limit();
+            int limit = EntityModelCosts.limit(type);
             if (limit <= 0) continue;
             var selection = selections.get(type);
             if (selection == null) {
@@ -143,7 +150,7 @@ public final class EntityVisualPolicy {
         var camera = client.gameRenderer.mainCamera().position();
         var inputs = new java.util.ArrayList<SelectionSnapshot.Candidate>();
         int scanned = 0;
-        for (var entity : candidates(client)) {
+        for (var entity : candidates(client,settings.entityMetadataLimitKiB*2)) {
             if ((++scanned & 63) == 0 && !WorkCoordinator.available() ||
                     inputs.size() >= settings.entityMetadataLimitKiB * 2) {
                 hidden.clear();
@@ -151,7 +158,7 @@ public final class EntityVisualPolicy {
             }
             if (entity instanceof Player || settings.protectImportantEntities &&
                     (entity.hasCustomName() || entity.isCurrentlyGlowing())) continue;
-            int limit = VisualRules.entity(entity.getType()).limit();
+            int limit = EntityModelCosts.limit(entity.getType());
             if (limit > 0) inputs.add(new SelectionSnapshot.Candidate(entity.getId(),
                     net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getId(entity.getType()), limit,
                     entity.distanceToSqr(camera)));

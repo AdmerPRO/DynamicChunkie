@@ -75,7 +75,7 @@ public final class ParticlePolicy {
         if (particle==null) return;
         var c=DynamicChunkie.settings();
         if (c==null || !c.enabled || !c.enableAdaptiveParticles || !c.shortenAmbientParticles ||
-                EntityVisualPolicy.scale()>.8) return;
+                EntityVisualPolicy.particleScale()>.8) return;
         var type=options.getType();
         if (type!=ParticleTypes.ASH && type!=ParticleTypes.WHITE_ASH && type!=ParticleTypes.SPORE_BLOSSOM_AIR) return;
         if (type.getOverrideLimiter() || VisualRules.particle(type).important()) return;
@@ -92,7 +92,7 @@ public final class ParticlePolicy {
         if (type.getOverrideLimiter() || combat(type)) return false;
         var rule = VisualRules.particle(type);
         if (rule.important()) return false;
-        double factor = EntityVisualPolicy.scale();
+        double factor = EntityVisualPolicy.particleScale();
         double radius = c.particleVisualDistance * factor;
         var camera = client.gameRenderer.mainCamera();
         double distance = distance(camera,x,y,z);

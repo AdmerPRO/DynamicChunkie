@@ -12,6 +12,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityRenderDispatcher.class)
 abstract class EntityRenderDispatcherMixin {
+    @org.spongepowered.asm.mixin.Unique private long dynamicchunkie$submitStart;
+
+    @Inject(method="submit",at=@At("HEAD"))
+    private void dynamicchunkie$sampleStart(net.minecraft.client.renderer.entity.state.EntityRenderState state,
+            net.minecraft.client.renderer.state.level.CameraRenderState camera,double x,double y,double z,
+            com.mojang.blaze3d.vertex.PoseStack pose,net.minecraft.client.renderer.SubmitNodeCollector nodes,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        dynamicchunkie$submitStart=dev.dynamicchunkie.visual.EntityModelCosts.begin(state.entityType);
+    }
+    @Inject(method="submit",at=@At("RETURN"))
+    private void dynamicchunkie$sampleEnd(net.minecraft.client.renderer.entity.state.EntityRenderState state,
+            net.minecraft.client.renderer.state.level.CameraRenderState camera,double x,double y,double z,
+            com.mojang.blaze3d.vertex.PoseStack pose,net.minecraft.client.renderer.SubmitNodeCollector nodes,
+            org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        dev.dynamicchunkie.visual.EntityModelCosts.finish(state.entityType,dynamicchunkie$submitStart);
+    }
+
     @Inject(method = "shouldRender", at = @At("HEAD"))
     private void dynamicchunkie$beginDecision(CallbackInfoReturnable<Boolean> result) {
         EntityRejections.clearHint();

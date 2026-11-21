@@ -24,6 +24,8 @@ public final class EntityCulling {
     private final boolean externalCuller = FabricLoader.getInstance().isModLoaded("entityculling");
     private IdentityHashMap<Entity, State> states = new IdentityHashMap<>();
     private Set<Entity> scheduled=Collections.newSetFromMap(new IdentityHashMap<>());
+    private ArrayDeque<Entity> priorityQueue = new ArrayDeque<>();
+    private int turn;
     private ArrayDeque<Entity> queue = new ArrayDeque<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private final VoxelOcclusion.Blocks blocks = this::blockAt;
@@ -37,16 +39,18 @@ public final class EntityCulling {
         int blockedSamples, firstCorner;
         long localRevision, globalRevision;
     }
-    public void clear() { states.clear(); queue.clear(); scheduled.clear(); world = null; blockReads.clear(); }
+    public void clear() { states.clear(); priorityQueue.clear(); queue.clear(); scheduled.clear(); world = null; blockReads.clear(); }
     public void release() {
         clear();
         states = new IdentityHashMap<>();
         scheduled = Collections.newSetFromMap(new IdentityHashMap<>());
         queue = new ArrayDeque<>();
+        priorityQueue = new ArrayDeque<>();
+        blockReads.trim();
         observedSkips = 0;
     }
     public void forget(Entity entity) {
-        if (scheduled.remove(entity)) queue.remove(entity);
+        if (scheduled.remove(entity) && !priorityQueue.remove(entity)) queue.remove(entity);
         states.remove(entity);
     }
 
@@ -65,15 +69,16 @@ public final class EntityCulling {
         int budget=config.entityCullingBudget;
         if (config.enableHardwareAdaptive && dev.dynamicchunkie.DynamicChunkie.distanceManager().performance().cpuPressure())
             budget=Math.max(1,budget/2);
-        int count = Math.min(budget, queue.size());
+        int count = Math.min(budget, scheduled.size());
         for (int i = 0; i < count && System.nanoTime()<deadline; i++) {
-            Entity entity = queue.removeFirst();
+            // Reserve every third turn for ordinary candidates even on a dense farm.
+            boolean priority=!priorityQueue.isEmpty() && (queue.isEmpty() || ++turn%3!=0);
+            Entity entity = (priority?priorityQueue:queue).removeFirst();
             if (!entity.isRemoved() && candidate(entity, client) && inRange(entity, camera.x, camera.y, camera.z)) {
-
                 var frustum=client.gameRenderer.mainCamera().getCullFrustum();
                 if (frustum != null && frustum.isVisible(entity.getBoundingBox().inflate(.25))) {
                     sample(entity, camera, now);
-                    queue.addLast(entity);
+                    enqueue(entity,camera.x,camera.y,camera.z);
                     continue;
                 }
             }
@@ -84,6 +89,11 @@ public final class EntityCulling {
         observedSkips=0;
     }
 
+    private void enqueue(Entity entity,double x,double y,double z) {
+        boolean high=entity instanceof LivingEntity && (entity.distanceToSqr(x,y,z)<32*32 ||
+                dev.dynamicchunkie.visual.EntityModelCosts.expensive(entity.getType()));
+        (high?priorityQueue:queue).addLast(entity);
+    }
     private boolean inRange(Entity entity, double x, double y, double z) {
         double distance = entity.distanceToSqr(x, y, z);
         int maximum = DynamicChunkie.settings().entityCullingDistance;
@@ -151,8 +161,8 @@ public final class EntityCulling {
     public boolean shouldCull(Entity entity, double cameraX, double cameraY, double cameraZ) {
         if (!enabled() || world == null || !inRange(entity, cameraX, cameraY, cameraZ) || !candidate(entity, Minecraft.getInstance())) return false;
         // Native shouldRender has admitted this entity. Seed the round-robin queue on demand.
-        if (queue.size()<Math.min(2048,DynamicChunkie.settings().entityMetadataLimitKiB*4) && scheduled.add(entity))
-            queue.addFirst(entity);
+        if (scheduled.size()<Math.min(2048,DynamicChunkie.settings().entityMetadataLimitKiB*4) && scheduled.add(entity))
+            enqueue(entity,cameraX,cameraY,cameraZ);
         State state = states.get(entity);
         if (state == null || state.blockedSamples < 2 || System.nanoTime() - state.checkedAt > MAX_AGE) return false;
         if (!state.box.equals(entity.getBoundingBox())) return false;

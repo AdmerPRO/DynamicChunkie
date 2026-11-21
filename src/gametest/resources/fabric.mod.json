@@ -12,6 +12,7 @@
       "dev.dynamicchunkie.VisualPoliciesGameTest",
       "dev.dynamicchunkie.TerrainCullingGameTest",
       "dev.dynamicchunkie.HotSoftGameTest",
+      "dev.dynamicchunkie.EnvironmentScenesGameTest",
       "dev.dynamicchunkie.benchmark.HotSoftBenchmark"
     ]
   }

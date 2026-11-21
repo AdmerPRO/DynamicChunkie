@@ -20,6 +20,9 @@ public final class RenderChanges {
         record(kind);
         columns[bucket(x,0,z,2047)] = worldGeometry;
     }
+    public long columnVersion(int x,int z) {
+        return columns[bucket(x,0,z,columns.length-1)];
+    }
     public long region(int minX,int minY,int minZ,int maxX,int maxY,int maxZ,boolean sky) {
         long version = 0;
         for (int x=minX;x<=maxX;x++) for (int z=minZ;z<=maxZ;z++) {

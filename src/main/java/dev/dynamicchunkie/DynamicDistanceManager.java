@@ -24,7 +24,7 @@ public final class DynamicDistanceManager {
     private final dev.dynamicchunkie.performance.FrameCpuSampler cpuSampler =
             new dev.dynamicchunkie.performance.FrameCpuSampler(() ->
                     THREADS.isCurrentThreadCpuTimeSupported() ? THREADS.getCurrentThreadCpuTime() : -1);
-    private double smoothed=Double.NaN,lastYaw,analysisMs;
+    private double smoothed=Double.NaN,lastYaw,lastPitch,analysisMs;
     private DistanceOwnership ownership;
     private int target,intervalMs=750;
     private @Nullable EnvironmentScore score;
@@ -86,12 +86,12 @@ public final class DynamicDistanceManager {
             resetAnalysis();performance.reset();lastFrame=0;
         }
         double speed=player.getDeltaMovement().length()*20;
-        boolean turning=Math.abs(net.minecraft.util.Mth.wrapDegrees(player.getYRot()-lastYaw))>15;
+        boolean turning=Math.abs(net.minecraft.util.Mth.wrapDegrees(player.getYRot()-lastYaw))>15 || Math.abs(player.getXRot()-lastPitch)>12;
         intervalMs=AnalysisPolicy.interval(speed,player.isFallFlying(),turning,
                 settings.enableHardwareAdaptive && (performance.cpuPressure() || analysisMs>3),
                 settings.stationaryIntervalMs,settings.walkingIntervalMs,settings.elytraIntervalMs,
                 settings.enableAdaptiveAnalysis,settings.analysisIntervalMs);
-        if ((score==null || now-lastAnalysis>=intervalMs*1_000_000L) && WorkCoordinator.admit(AnalysisScheduler.Module.ENVIRONMENT, 0, true)) {
+        if ((score==null || now-lastAnalysis>=intervalMs*1_000_000L || turning && now-lastAnalysis>=250_000_000L) && WorkCoordinator.admit(AnalysisScheduler.Module.ENVIRONMENT, 0, true)) {
             long begin=System.nanoTime();
             var eye=player.getEyePosition();
             var key=new EnvironmentCache.Key((int)Math.floor(eye.x*4),(int)Math.floor(eye.y*4),
@@ -101,19 +101,20 @@ public final class DynamicDistanceManager {
                     x-4,y-4,z-4,x+4,y+4,z+4,true);
             boolean reusable=settings.enableAdaptiveAnalysis && speed<.15;
             RaycastAnalyzer.Sample cached=reusable?cache.get(key,now,revision,settings.analysisCacheTtlMs):null;
-            var sample=cached!=null?cached:analyzer.sample(client,revision,WorkCoordinator.deadline(1_500_000));
+            long deadline=WorkCoordinator.deadline(1_500_000);
+            var sample=cached!=null?analyzer.refreshOpening(client,cached,deadline):analyzer.sample(client,revision,deadline);
             if (sample==null) {
                 WorkCoordinator.complete(AnalysisScheduler.Module.ENVIRONMENT,begin,0);
                 return;
             }
-            score=analyzer.evaluate(client,settings,sample);
+            score=analyzer.evaluate(client,settings,sample,deadline);
             if (cached==null && reusable) cache.put(key,sample,now,revision,settings.analysisCacheEntries,
                     settings.analysisMetadataLimitKiB*1024L);
             if (cached==null) analysisMs=analysisMs*.8+(System.nanoTime()-begin)/1e6*.2;
             smoothed=Double.isNaN(smoothed)?score.openness():smoothed+settings.smoothingFactor*(score.openness()-smoothed);
             if(settings.enablePrediction && AnalysisPolicy.approachingWall(score.elytra(),score.speed(),score.forward()))
                 smoothed=Math.min(smoothed,score.openness());
-            lastAnalysis=now;lastYaw=player.getYRot();
+            lastAnalysis=now;lastYaw=player.getYRot();lastPitch=player.getXRot();
             WorkCoordinator.complete(AnalysisScheduler.Module.ENVIRONMENT, begin, cached == null ? 0 : 1);
         }
         if (score == null) return;
@@ -134,6 +135,7 @@ public final class DynamicDistanceManager {
             target=stableTarget.restrict(candidate,settings);
         int current=controller.current(),bounded=settings.bound(current);
         if (current!=bounded) {ownership.set(bounded);return;}
+        if (target>current && (settings.enableFpsAdaptive || settings.enableHardwareAdaptive) && performance.growthBlocked(now)) return;
         if (target>current && settings.enableHardwareAdaptive && !client.levelRenderer.hasRenderedAllSections()) return;
         if (Math.abs(target-current)<=settings.deadZoneChunks) return;
         int next=transitions.next(current,target,now,settings.transitionIntervalMs);

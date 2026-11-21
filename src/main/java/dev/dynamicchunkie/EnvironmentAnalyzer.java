@@ -3,17 +3,20 @@ package dev.dynamicchunkie;
 import net.minecraft.client.Minecraft;
 
 public final class EnvironmentAnalyzer {
-    private static final double[] SCORE_KNOTS={0,.13,.30,.65,.82,1};
+    private static final double[] SCORE_KNOTS={.11,.15,.285,.65,.82,1};
     private final RaycastAnalyzer rays = new RaycastAnalyzer();
     public EnvironmentScore analyze(Minecraft client, DynamicChunkieConfig draft) {
-        return evaluate(client, RuntimeSettings.capture(draft), new RaycastAnalyzer().sample(client.level,client.player,0,Long.MAX_VALUE));
+        return evaluate(client, RuntimeSettings.capture(draft), rays.sample(client.level,client.player,0,Long.MAX_VALUE),Long.MAX_VALUE);
     }
 
     public RaycastAnalyzer.Sample sample(Minecraft client, long revision, long deadline) {
         return rays.sample(client.level,client.player,revision,deadline);
     }
+    public RaycastAnalyzer.Sample refreshOpening(Minecraft client,RaycastAnalyzer.Sample previous,long deadline) {
+        return rays.refreshOpening(client.level,client.player,previous,deadline);
+    }
     public void reset() { rays.reset(); }
-    public EnvironmentScore evaluate(Minecraft client, RuntimeSettings c, RaycastAnalyzer.Sample r) {
+    public EnvironmentScore evaluate(Minecraft client, RuntimeSettings c, RaycastAnalyzer.Sample r,long deadline) {
         var p = client.player;
         boolean sky = c.enableSkyDetection && client.level.canSeeSky(p.blockPosition());
         double altitude = p.getY();
@@ -29,7 +32,7 @@ public final class EnvironmentAnalyzer {
         if (c.enablePrediction && speed>=.8) {
             double confidence=Math.min(1, .35 + .4*r.forward() + .25*r.gaze());
             int horizon=(int)(c.predictionLookaheadMs*confidence*Math.min(1,.4+speed/30));
-            var preview=rays.preview(client.level,p,horizon);
+            var preview=rays.preview(client.level,p,horizon,deadline);
             predicted=preview.openness();
             exitAhead=c.enableSkyDetection && !sky && preview.sky() && predicted>.55;
             double alignment=p.getDeltaMovement().normalize().dot(p.getLookAngle());
@@ -64,6 +67,8 @@ public final class EnvironmentAnalyzer {
         return c.bound((int)Math.round(Math.min(cap, target(smoothed, c))));
     }
     static double target(double score, RuntimeSettings c) {
+        // The enclosed Y=180 passage fixture scores 0.105 with its long axis visible.
+        if (score<=SCORE_KNOTS[0]) return c.tunnelDistance;
         for (int i = 1; i < SCORE_KNOTS.length; i++)
             if (score <= SCORE_KNOTS[i]) {
                 int lower=profileValue(i-1,c),upper=profileValue(i,c);

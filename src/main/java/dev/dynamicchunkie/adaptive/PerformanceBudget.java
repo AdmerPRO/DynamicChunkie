@@ -7,7 +7,7 @@ public final class PerformanceBudget {
     private final FrameWindow frames=new FrameWindow(120);
     private int limit=32;
     private double cpuMs=Double.NaN, workMs, gpu=Double.NaN, mean,p95;
-    private long started, lastEvaluation, unhealthySince, healthySince,lastSummary;
+    private long started, lastEvaluation, unhealthySince, healthySince,lastSummary,growthBlockedUntil;
     private boolean cpuPressure;
     private String reason="Warming up";
 
@@ -30,7 +30,8 @@ public final class PerformanceBudget {
         lastEvaluation=now;
         summarize(now);
         double budget=1000.0/targetFps;
-        boolean slow=mean>budget*1.10 || p95>budget*1.25;
+        // One long GC pause can dominate the mean of a small window.
+        boolean slow=p95>budget*1.25 || p95>budget && mean>budget*1.10;
         boolean gpuBusy=hardwareEnabled && !Double.isNaN(gpu) && gpu>92;
         cpuPressure=hardwareEnabled && !Double.isNaN(cpuMs) && cpuMs>budget*.8;
         boolean irregular=p95-mean>budget*.25;
@@ -38,6 +39,7 @@ public final class PerformanceBudget {
         boolean pressure=slow && (gpuBusy || cpuPressure || fpsEnabled && (irregular || (Double.isNaN(cpuMs)?workMs>budget:cpuMs>budget*.8)));
         boolean headroom=mean<budget*.95 && p95<budget*1.1 && !gpuBusy && !cpuPressure;
         if (pressure) {
+            growthBlockedUntil=now+5_000_000_000L;
             healthySince=0;if (unhealthySince==0) unhealthySince=now;
             reason=gpuBusy?"GPU timing pressure":cpuPressure?"CPU frame pressure":"Frame-time stalls";
             if (now-unhealthySince>=3_000_000_000L) {
@@ -58,7 +60,8 @@ public final class PerformanceBudget {
         lastSummary=now;
         mean=frames.mean();p95=frames.percentile(.95);
     }
-    public void reset() {frames.clear();started=lastEvaluation=unhealthySince=healthySince=0;cpuPressure=false;cpuMs=Double.NaN;mean=p95=workMs=0;gpu=Double.NaN;lastSummary=0;reason="Warming up";}
+    public void reset() {frames.clear();growthBlockedUntil=0;started=lastEvaluation=unhealthySince=healthySince=0;cpuPressure=false;cpuMs=Double.NaN;mean=p95=workMs=0;gpu=Double.NaN;lastSummary=0;reason="Warming up";}
+    public boolean growthBlocked(long now) {return now<growthBlockedUntil;}
     public boolean cpuPressure() {return cpuPressure;}
     public double cpuMs() {return cpuMs;}
     public double meanMs() {return mean;}

@@ -26,8 +26,7 @@ Minecraft's `isSolidRender` and `canOcclude` flags supply the opacity classifica
 New occluders wait for native render queues to finish and one second of stable world
 data, so newly placed blocks cannot hide terrain before their meshes are available.
 
-Camera-position changes invalidate decisions. Block/chunk changes invalidate the whole
-occluder snapshot immediately for the draw-time revision check. Resource/renderer reloads
+Camera-position changes invalidate decisions. Local section and chunk stamps invalidate the occluder snapshot when its search neighbourhood changes. Fixed-size stamp tables can also cause conservative invalidation on a hash collision. Resource/renderer reloads
 also invalidate it. Unknown/unverified data is rendered. Work is bounded by
 `terrainChecksPerFrame` (default 128, validated 8–1024), a 1 ms soft geometry-test budget
 per frame, and 8192 cached decisions. Unexamined candidates remain visible.
@@ -53,7 +52,7 @@ Enable `enableEntityTypeLimits` and choose maximums by registry ID, for example
 `minecraft:cow: 100` as the JSON map entry `"minecraft:cow": 100`. Zero is unlimited.
 Mod Menu groups types into Farm, Animals, Monsters, Water, End, Nether and Misc and
 provides category jump buttons. Modded types use their Minecraft category as fallback.
-The nearest eligible entities are kept first; selection refreshes every 250 ms.
+The nearest eligible entities are kept first; the scheduler checks for changed membership, camera position or model budgets at a nominal 250 ms interval. Stationary candidates reuse the previous selection.
 Players are not subject to these population budgets.
 
 `protectImportantEntities` defaults to true, exempting named/glowing entities from the
@@ -131,3 +130,21 @@ FPS cap handling and urgent downward target changes without admitting increases.
 
 Long sessions, real GPU/CPU saturation, resource packs changing block opacity/models,
 and arbitrary modded particles still require manual validation and profiling.
+
+## Renderer budgets in Mod Menu
+
+The Performance tools pages include these optional controls.
+
+| Setting | Default | Effect |
+|---|---:|---|
+| `entityShadowDistance` | 0 | Limit native entity shadow extraction beyond this many blocks. |
+| `entityNameDistance` | 0 | Limit distant labels while preserving player names, glowing entities and explicitly visible names. |
+| `mobDetailDistance` | 0 | Limit the sheep wool undercoat beyond the selected distance. |
+| `entityTypeCpuBudgetMicros` | 0 | Set a client CPU submission budget per explicitly limited entity type. The selector keeps the nearest models and applies the configured maximum. |
+| `shortenAmbientParticles` | false | Under load, halve the lifetime of distant ash, white ash and spore blossom air. |
+
+Zero preserves the native detail distances and disables CPU cost sampling. A positive CPU budget samples one model submission per 32 calls of each configured type and requires eight observations before adjusting its limit. These timings measure CPU command submission. GPU execution is asynchronous.
+
+Cosmetic admission runs before the native particle provider constructs the effect. Under sustained bursts it spaces admissions using the preceding tick's demand. Region and group quotas leave room for effects from other sources. Direct additions of existing particle instances bypass provider admission. Clouds require one second of sustained overload per downgrade and five seconds of recovery per upgrade.
+
+The client test constructs a stone tunnel, a roofed chamber and an open platform at Y=180. It samples the same player position and direction in all three and checks the order of the measured openness scores.

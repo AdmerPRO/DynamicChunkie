@@ -93,7 +93,7 @@ An additional movement-direction ray gates a small speed-related boost; enclosed
 cannot earn a large bonus merely from speed.
 
 Smoothed scores interpolate six configurable distance profile values at score knots
-0, 0.13, 0.30, 0.65, 0.82 and 1. Covered environments cap at the underground-open value;
+0.11, 0.15, 0.285, 0.65, 0.82 and 1. Scores up to 0.11 use the tunnel distance. Covered environments cap at the underground-open value;
 open sea-level terrain caps at the surface value. With sufficient horizontal openness,
 the surface cap rises toward the mountain value from Y=96–160, then toward the high-altitude
 value from Y=160–240. Altitude alone cannot increase the score in a tight room.
@@ -342,13 +342,18 @@ Sodium 0.9.3-beta.1+mc26.3 are supported. Iris or an unknown Sodium version disa
 this extra filter. Snapshots exceeding `hotSoftScanBudgetMicros` (default 1500,
 validated 250–10000) fall back to native visibility. The working set is bounded
 at 32768 candidates and 8192 deferred coordinates. Camera-visible deferred work
-is replayed first; a rotating queue admits at most 128 rebuilds per extraction.
+is replayed first. The nearby queue uses an 8×4×8 section index. Separate controls
+limit rebuild requests per extraction (32 by default) and outstanding replay meshes
+(16 by default). The latter counts mod-issued work until native mesh publication,
+chunk unload or cancellation timeout. Native uploads from other sources keep their own schedule.
 Disabling drains pending work; disconnect discards the old world's queue.
-Sodium draw commands refresh on membership changes without deleting chunk meshes.
+Sodium rechecks the command region that owns each changed hot section. A region
+rebuilds its commands when a draw decision changes. Transparent geometry keeps its
+native reverse-order iterator. To keep cold rebuild deferral alone, enable
+`deferColdSectionRebuilds` and turn off `filterHotSectionDraws`.
 
 Minecraft already culls sections. Extra FPS depends on the scene and may be zero
-or negative when scan/filter overhead outweighs avoided work. This version does
-**not** evict cold meshes or client chunks, so it cannot promise a RAM/VRAM saving.
+or negative when scan/filter overhead outweighs avoided work. The optional cold geometry eviction experiment is available for the pinned Sodium version. Counting overlapping soft neighbours also consumes heap.
 The profiler shows hot membership, pending rebuilds and scan time. See
 [automated benchmarks](docs/hot-soft-benchmarks.md) for reproducible A/B comparisons.
 

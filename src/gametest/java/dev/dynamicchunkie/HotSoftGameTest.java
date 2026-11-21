@@ -54,6 +54,24 @@ public final class HotSoftGameTest implements FabricClientGameTest {
             context.waitFor(client -> dev.dynamicchunkie.render.SectionBackends.current().hasBuiltMesh(-3,6,0),400);
             context.runOnClient(client->{
                 if(!HotSoftSections.drawAllowed(-48,96,0))throw new AssertionError("Revisited hot section hidden");
+                var c=DynamicChunkie.config().copy();
+                c.filterHotSectionDraws=false;
+                c.enableColdGeometryEviction=false;
+                DynamicChunkie.applyConfig(c);
+            });
+            context.waitFor(client->HotSoftSections.active() && HotSoftSections.hotCount()==0,200);
+            context.runOnClient(client->{
+                if (!HotSoftSections.drawAllowed(48,96,0) || !HotSoftSections.defer(3,6,0,false))
+                    throw new AssertionError("Queue-only mode must retain an offscreen rebuild and admit drawing");
+                var c=DynamicChunkie.config().copy();
+                c.deferColdSectionRebuilds=false;
+                c.filterHotSectionDraws=true;
+                DynamicChunkie.applyConfig(c);
+            });
+            context.waitFor(client->HotSoftSections.filtering() && !HotSoftSections.isDeferred(3,6,0),200);
+            context.runOnClient(client->{
+                if (HotSoftSections.defer(3,6,0,false))
+                    throw new AssertionError("Draw-only mode deferred a rebuild");
                 var c=DynamicChunkie.config().copy();c.enableHotSoftSections=false;DynamicChunkie.applyConfig(c);
             });
             context.waitFor(client->!HotSoftSections.active(),100);

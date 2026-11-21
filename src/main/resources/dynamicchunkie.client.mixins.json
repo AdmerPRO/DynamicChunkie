@@ -33,6 +33,8 @@
     "sodium.SodiumTerrainRegionMixin",
     "FrustumBoundsAccess",
     "HotSoftUpdateMixin",
+    "VanillaMeshReadyMixin",
+    "sodium.SodiumMeshReadyMixin",
     "sodium.SodiumSectionCandidatesAccess",
     "sodium.SodiumHotSoftUpdateMixin",
     "sodium.SodiumMeshAllocations",

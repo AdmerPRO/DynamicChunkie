@@ -8,6 +8,10 @@ import org.spongepowered.asm.mixin.*;
 /** Preserve Sodium's sorting and draw pipeline, filtering only geometry-section iterators. */
 @Pseudo @Mixin(value=ChunkRenderList.class,remap=false)
 abstract class SodiumTerrainDrawMixin {
+    @org.spongepowered.asm.mixin.injection.Inject(method="reset",at=@org.spongepowered.asm.mixin.injection.At("RETURN"))
+    private void dynamicchunkie$nativeListChanged(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        dev.dynamicchunkie.sections.HotSoftSections.nativeListChanged();
+    }
     @WrapMethod(method="sectionsWithGeometryIterator")
     private ByteIterator dynamicchunkie$geometry(boolean reverse,Operation<ByteIterator> original) {
         ByteIterator source=original.call(reverse);if(source==null || !net.minecraft.client.Minecraft.getInstance().isSameThread())return source;

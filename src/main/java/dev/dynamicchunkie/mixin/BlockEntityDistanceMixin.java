@@ -23,7 +23,7 @@ abstract class BlockEntityDistanceMixin {
             if ((type==net.minecraft.client.renderer.blockentity.ChestRenderer.class ||
                     type==net.minecraft.client.renderer.blockentity.StandingSignRenderer.class ||
                     type==net.minecraft.client.renderer.blockentity.HangingSignRenderer.class) &&
-                    dev.dynamicchunkie.terrain.TerrainCulling.hide(pos.getX()&~15,pos.getY()&~15,pos.getZ()&~15)) {
+                    dev.dynamicchunkie.terrain.TerrainCulling.occluded(pos.getX()&~15,pos.getY()&~15,pos.getZ()&~15,false)) {
                 cir.setReturnValue(null);
                 return;
             }

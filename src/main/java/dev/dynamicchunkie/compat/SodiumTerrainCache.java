@@ -60,8 +60,8 @@ public final class SodiumTerrainCache {
             int y = region.getOriginY() + 16 * LocalSectionIndex.unpackY(index);
             int z = region.getOriginZ() + 16 * LocalSectionIndex.unpackZ(index);
             boolean before = excluded != null && excluded.contains(net.minecraft.core.SectionPos.asLong(x>>4,y>>4,z>>4));
-            boolean after = terrain && TerrainCulling.hide(x,y,z) ||
-                    filter && !dev.dynamicchunkie.sections.HotSoftSections.drawAllowed(x,y,z);
+            boolean after = terrain && TerrainCulling.occluded(x,y,z,false) ||
+                    filter && !dev.dynamicchunkie.sections.HotSoftSections.drawAllowed(x,y,z,false);
             if (after != before) {
                 region.clearAllCachedBatches();
                 invalidations++;

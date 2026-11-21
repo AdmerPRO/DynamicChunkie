@@ -38,6 +38,22 @@ public final class TerrainCulling {
     private static int sx,sy,sz,cursor,checks,hookCalls,lastSkipped,lastHooks;
     private static double cx=Double.NaN,cy,cz;
     private static volatile List<Box> boxes=List.of();
+    private static final Box[][] octants=new Box[8][128];
+    private static final int[] sizes=new int[8];
+    private static List<Box> indexedBoxes=List.of();
+    private static double indexX,indexY,indexZ;
+    private static float probeYaw,probePitch;
+    private static void indexOccluders() {
+        if (indexedBoxes==boxes && indexX==cx && indexY==cy && indexZ==cz) return;
+        Arrays.fill(sizes,0);
+        for (Box box:boxes) for (int octant=0;octant<8;octant++) {
+            if (((octant&1)==0 ? box.x>cx : box.x+16<cx) ||
+                    ((octant&2)==0 ? box.y>cy : box.y+16<cy) ||
+                    ((octant&4)==0 ? box.z>cz : box.z+16<cz)) continue;
+            octants[octant][sizes[octant]++]=box;
+        }
+        indexedBoxes=boxes;indexX=cx;indexY=cy;indexZ=cz;
+    }
     private TerrainCulling() {}
     private static int[][] offsets() {
         var values=new ArrayList<int[]>();
@@ -158,7 +174,8 @@ public final class TerrainCulling {
                 dev.dynamicchunkie.render.RendererCapabilities.current().visibleSectionTraversal() &&
                 (Minecraft.getInstance().player==null || !Minecraft.getInstance().player.isSpectator());
     }
-    public static boolean hide(int x,int y,int z) {
+    public static boolean hide(int x,int y,int z) {return occluded(x,y,z,true);}
+    public static boolean occluded(int x,int y,int z,boolean countDraw) {
         var client=Minecraft.getInstance();var c=DynamicChunkie.settings();
         if(!client.isSameThread() || !active() || c==null ||
                 boxes.isEmpty() || client.level==null || client.level!=world ||
@@ -166,6 +183,10 @@ public final class TerrainCulling {
         Vec3 camera=client.gameRenderer.mainCamera().position();
         if(camera.x!=cx || camera.y!=cy || camera.z!=cz) {
             decisions.clear();coveredGroups.clear();cx=camera.x;cy=camera.y;cz=camera.z;generation++;
+        }
+        var view=client.gameRenderer.mainCamera();
+        if (view.yRot()!=probeYaw || view.xRot()!=probePitch) {
+            emptyFrames=0;nextProbe=0;probeYaw=view.yRot();probePitch=view.xRot();
         }
         long key=SectionPos.asLong(x>>4,y>>4,z>>4);
         byte cached=decisions.get(key);
@@ -176,7 +197,10 @@ public final class TerrainCulling {
             int gx=x&~31, gy=y&~31, gz=z&~31;
             long group=SectionPos.asLong(gx>>5,gy>>5,gz>>5);
             boolean hidden=coveredGroups.contains(group);
-            if (!hidden) for(Box box:boxes) {
+            indexOccluders();
+            int octant=(x+8<cx?0:1)|(y+8<cy?0:2)|(z+8<cz?0:4);
+            if (!hidden) for(int i=0;i<sizes[octant];i++) {
+                Box box=octants[octant][i];
                 if (box.x+16<Math.min(cx,x-2) || box.x>Math.max(cx,x+18) ||
                         box.y+16<Math.min(cy,y-2) || box.y>Math.max(cy,y+18) ||
                         box.z+16<Math.min(cz,z-2) || box.z>Math.max(cz,z+18)) continue;
@@ -189,7 +213,7 @@ public final class TerrainCulling {
             cached=(byte)(hidden?2:1);
             decisions.put(key,cached);spentNanos+=System.nanoTime()-started;
         }
-        if(cached==2) {if (skipped.add(key)) observedOcclusionSkips++;return true;}
+        if(cached==2) {if (countDraw && skipped.add(key)) observedOcclusionSkips++;return true;}
         return false;
     }
     public static int skipped() {return lastSkipped;}

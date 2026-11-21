@@ -9,6 +9,7 @@ public interface SectionBackend {
     }
 
     boolean collect(Visitor visitor);
-    boolean hasBuiltMesh(int sectionX, int sectionY, int sectionZ);
+    long geometryCost(int sectionX,int sectionY,int sectionZ);
+    default boolean hasBuiltMesh(int x,int y,int z) {return geometryCost(x,y,z)>=0;}
     void requestRebuild(int sectionX, int sectionY, int sectionZ);
 }

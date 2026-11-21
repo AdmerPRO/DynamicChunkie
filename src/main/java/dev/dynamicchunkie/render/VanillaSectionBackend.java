@@ -16,10 +16,10 @@ final class VanillaSectionBackend implements SectionBackend {
         return true;
     }
 
-    @Override public boolean hasBuiltMesh(int x, int y, int z) {
+    @Override public long geometryCost(int x, int y, int z) {
         var area = Minecraft.getInstance().levelRenderer.viewArea();
         var section = area == null ? null : area.getRenderSectionAt(cursor.set(x * 16, y * 16, z * 16));
-        return section != null && section.getSectionMesh().hasRenderableLayers();
+        return section==null ? -1 : ((SectionMeshCost)section).dynamicchunkie$geometryCost();
     }
 
     @Override public void requestRebuild(int x, int y, int z) {

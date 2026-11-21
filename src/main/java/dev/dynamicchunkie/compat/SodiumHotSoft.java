@@ -35,12 +35,16 @@ public final class SodiumHotSoft implements SectionBackend {
         var storage = section.getRegion().getStorage(pass);
         return storage != null && ((SodiumMeshAllocations)(Object)storage).dynamicchunkie$vertices()[section.getSectionIndex()] != null;
     }
-    @Override public boolean hasBuiltMesh(int x,int y,int z) {
+    @Override public long geometryCost(int x,int y,int z) {
         var section = section(x,y,z);
-        if (section == null || !section.isBuilt() || section.isInvisible()) return false;
+        if (section == null || !section.isBuilt() || section.isInvisible()) return -1;
+        return ((dev.dynamicchunkie.render.SectionMeshCost)section).dynamicchunkie$geometryCost();
+    }
+
+    public static long measure(net.caffeinemc.mods.sodium.client.render.chunk.RenderSection section) {
         for (var pass : net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses.ALL)
-            if (allocated(section,pass)) return true;
-        return false;
+            if (allocated(section,pass)) return Math.max(1,section.getLastMeshResultSize());
+        return -1;
     }
     public static long opaqueMeshCost(int x,int y,int z) {
         var section = section(x,y,z);
@@ -63,6 +67,7 @@ public final class SodiumHotSoft implements SectionBackend {
             region.getStorage(pass).removeData(section.getSectionIndex());
             released = true;
         }
+        if (released) ((dev.dynamicchunkie.compat.SodiumCostState)section).dynamicchunkie$invalidateCost();
         return released;
     }
     @Override public void requestRebuild(int x,int y,int z) {

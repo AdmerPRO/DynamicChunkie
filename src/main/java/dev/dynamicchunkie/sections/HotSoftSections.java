@@ -13,14 +13,24 @@ public final class HotSoftSections {
     private static final it.unimi.dsi.fastutil.longs.LongOpenHashSet working = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
     private static int peakWorking;
     private static final SectionView view = new SectionView();
+    private static final java.util.concurrent.atomic.AtomicLong nativeListVersion=new java.util.concurrent.atomic.AtomicLong();
+    private static long capturedListVersion;
+    private static final it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap awaitingMesh=new it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap();
+    public static void meshCompleted(int x,int y,int z) {
+        if (Minecraft.getInstance().isSameThread()) awaitingMesh.remove(HotSoftGrid.key(x,y,z));
+    }
+    public static void nativeListChanged() {nativeListVersion.incrementAndGet();}
     public static void verifyView() {
-        if (filtering() && !view.matches(Minecraft.getInstance())) {
+        if (filtering() && (capturedListVersion!=nativeListVersion.get() ||
+                !view.matches(Minecraft.getInstance(),TerrainCulling.active()?0:1))) {
             ready=false;
             TerrainCulling.invalidateDrawBatches();
         }
     }
     private static final ColdRegions coldRegions = new ColdRegions();
     private static final it.unimi.dsi.fastutil.longs.LongOpenHashSet nearby = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+    private static final long[] visibleWindow=new long[32];
+    private static final double[] priorities=new double[32];
     private static final LongLinkedOpenHashSet visibleReplay = new LongLinkedOpenHashSet();
     private static final LongLinkedOpenHashSet deferred=new LongLinkedOpenHashSet();
     private static final it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap coldSince =
@@ -30,7 +40,7 @@ public final class HotSoftSections {
     private static Object world;
     private static long revision,deadline,captureNanos,deferredTotal,replayedTotal,fallbackFrames;
     private static int visited,peakDeferred;
-    private static boolean ready,replaying,drawFilter;
+    private static boolean ready,replaying,drawFilter,lastTerrainActive;
     private HotSoftSections() {}
     private static boolean enabled() {
         var c=DynamicChunkie.settings();
@@ -39,7 +49,7 @@ public final class HotSoftSections {
     public static void capture() {
         var client=Minecraft.getInstance();
         if(world!=client.level) {
-            world=client.level;deferred.clear();coldRegions.clear();visibleReplay.clear();nearby.clear();coldSince.clear();lastRetirementTick=Long.MIN_VALUE;current.clear();working.clear();
+            world=client.level;deferred.clear();awaitingMesh.clear();coldRegions.clear();visibleReplay.clear();nearby.clear();coldSince.clear();lastRetirementTick=Long.MIN_VALUE;current.clear();working.clear();
             if(ready)TerrainCulling.invalidateDrawBatches();ready=false;
         }
         if(!enabled() || client.level==null || client.player==null) {
@@ -53,19 +63,28 @@ public final class HotSoftSections {
                 current.clear();
                 TerrainCulling.invalidateDrawBatches();
             }
+            revision=((EnvironmentRevision)client.level).dynamicchunkie$revision();
             ready=DynamicChunkie.settings().deferColdSectionRebuilds;
             captureNanos=0;
             replay(!ready);
             return;
         }
+        var geometry=((EnvironmentRevision)client.level).dynamicchunkie$revision();
+        if (ready && previousFilter && !TerrainCulling.active() && !lastTerrainActive &&
+                capturedListVersion==nativeListVersion.get() && revision==geometry && view.matches(client,1)) {
+            captureNanos=0;
+            replay(!DynamicChunkie.settings().deferColdSectionRebuilds);
+            return;
+        }
         long start=System.nanoTime();deadline=start+DynamicChunkie.settings().hotSoftScanBudgetMicros*1000L;
         working.clear();visibleReplay.clear();visited=0;
+        long collectingVersion=nativeListVersion.get();
         boolean complete=SectionBackends.current().collect(COLLECTOR);
         var camera=client.gameRenderer.mainCamera().position();
         working.add(HotSoftGrid.key((int)Math.floor(camera.x/16),(int)Math.floor(camera.y/16),(int)Math.floor(camera.z/16)));
         peakWorking=Math.max(peakWorking,working.size());
         captureNanos=System.nanoTime()-start;
-        if(!complete) {
+        if(!complete || collectingVersion!=nativeListVersion.get()) {
             fallbackFrames++;if(ready)TerrainCulling.invalidateDrawBatches();ready=false;replay(true);return;
         }
         boolean resetBatches=!ready || !previousFilter;
@@ -73,6 +92,8 @@ public final class HotSoftSections {
         if (!resetBatches && RenderCache.sodiumSupported()) notify=HotSoftSections::sectionChanged;
         current.update(working,notify);
         view.capture(client);
+        lastTerrainActive=TerrainCulling.active();
+        capturedListVersion=collectingVersion;
         ready=true;
         revision=((EnvironmentRevision)client.level).dynamicchunkie$revision();
         if(resetBatches)TerrainCulling.invalidateDrawBatches();
@@ -83,7 +104,7 @@ public final class HotSoftSections {
     }
     private static boolean consider(int x,int y,int z) {
         if(++visited>32768 || (visited%64==0 && System.nanoTime()>deadline))return false;
-        if(inView(x,y,z) && !TerrainCulling.hide(x,y,z)) {
+        if(inView(x,y,z) && !TerrainCulling.occluded(x,y,z,false)) {
             long key=HotSoftGrid.key(x>>4,y>>4,z>>4);
             working.add(key);
             if (deferred.contains(key)) visibleReplay.add(key);
@@ -102,11 +123,12 @@ public final class HotSoftSections {
     public static boolean active(){return ready && enabled() && Minecraft.getInstance().level==world;}
     public static boolean filtering(){return active() && drawFilter && DynamicChunkie.settings().filterHotSectionDraws;}
     private static boolean protectedView(int x,int y,int z) {return intersectsView(x*16,y*16,z*16,drawFilter?2:18);}
-    public static boolean drawAllowed(int x,int y,int z) {
+    public static boolean drawAllowed(int x,int y,int z) {return drawAllowed(x,y,z,true);}
+    public static boolean drawAllowed(int x,int y,int z,boolean countDraw) {
         var client=Minecraft.getInstance();
         if(!filtering() || ((EnvironmentRevision)client.level).dynamicchunkie$revision()!=revision)return true;
         boolean hot=current.isHot(HotSoftGrid.key(x>>4,y>>4,z>>4));
-        if(!hot)TerrainCulling.noteExternalSkip(x,y,z);
+        if(!hot && countDraw)TerrainCulling.noteExternalSkip(x,y,z);
         return hot;
     }
     public static boolean defer(int x,int y,int z,boolean important) {
@@ -129,14 +151,19 @@ public final class HotSoftSections {
     private static void replay(boolean all) {
         var client=Minecraft.getInstance();if(client.level==null)return;
         if(deferred.isEmpty())return;
-        int budget=128;
+        int budget=DynamicChunkie.settings().replayRequestsPerFrame;
+        if (!all) {
+            long now=System.nanoTime();
+            // A native rebuild may be superseded or cancelled before publishing a mesh.
+            var tickets=awaitingMesh.values().iterator();
+            while(tickets.hasNext()) if(now-tickets.nextLong()>5_000_000_000L) tickets.remove();
+            budget=Math.min(budget,DynamicChunkie.settings().replayPendingUploads-awaitingMesh.size());
+            if (budget<=0) return;
+        }
         if(!all) {
             var camera=client.gameRenderer.mainCamera().position();
             int x=(int)Math.floor(camera.x/16), y=(int)Math.floor(camera.y/16), z=(int)Math.floor(camera.z/16);
-            while (!visibleReplay.isEmpty() && budget>0) {
-                long key=visibleReplay.removeFirstLong();
-                if(forget(key)){rebuild(key);budget--;}
-            }
+            budget=replayVisible(camera,budget);
             coldRegions.near(x,y,z,nearby);
             var nearbyKeys=nearby.iterator();
             while (nearbyKeys.hasNext() && budget>0) {
@@ -157,6 +184,28 @@ public final class HotSoftSections {
             coldRegions.remove(key);coldSince.remove(key);rebuild(key);budget--;
         }
     }
+    private static int replayVisible(net.minecraft.world.phys.Vec3 camera,int budget) {
+        int count=0;
+        while(count<visibleWindow.length && !visibleReplay.isEmpty()) {
+            long key=visibleReplay.removeFirstLong();
+            if (!deferred.contains(key)) continue;
+            int x=HotSoftGrid.x(key), y=HotSoftGrid.y(key), z=HotSoftGrid.z(key);
+            long cost=SectionBackends.current().geometryCost(x,y,z);
+            double distance=camera.distanceToSqr(x*16+8,y*16+8,z*16+8);
+            int i=count++;
+            double rank=distance*(1+Math.log1p(Math.max(0,cost))*.03);
+            while(i>0 && priorities[i-1]>rank) {
+                priorities[i]=priorities[i-1];visibleWindow[i]=visibleWindow[i-1];i--;
+            }
+            priorities[i]=rank;visibleWindow[i]=key;
+        }
+        for (int i=0;i<count;i++) {
+            long key=visibleWindow[i];
+            if (budget==0) visibleReplay.add(key);
+            else if (forget(key)) {rebuild(key);budget--;}
+        }
+        return budget;
+    }
     @SuppressWarnings("PMD.UnusedAssignment") // Native rebuild hooks synchronously re-enter defer and read replaying.
     private static void rebuild(long key) {
         var client=Minecraft.getInstance();
@@ -164,6 +213,7 @@ public final class HotSoftSections {
         if(!client.level.getChunkSource().hasChunk(x,z))return;
         replaying=true;
         try {
+            if (active()) awaitingMesh.put(key,System.nanoTime());
             SectionBackends.current().requestRebuild(x,y,z);
             replayedTotal++;
         }finally{replaying=false;}
@@ -208,11 +258,14 @@ public final class HotSoftSections {
     public static long evictions() { return evictions; }
 
     public static void unload(net.minecraft.client.multiplayer.ClientLevel level, int x, int z) {
-        if (level != world || deferred.isEmpty()) return;
-        for (int y = level.getMinSectionY(); y <= level.getMaxSectionY(); y++)
-            forget(HotSoftGrid.key(x, y, z));
+        if (level != world || deferred.isEmpty() && awaitingMesh.isEmpty()) return;
+        for (int y = level.getMinSectionY(); y <= level.getMaxSectionY(); y++) {
+            long key=HotSoftGrid.key(x,y,z);
+            awaitingMesh.remove(key);
+            forget(key);
+        }
     }
-    public static void clear(){world=null;ready=false;current=new HotSoftGrid();working.clear();working.trim();peakWorking=0;deferred.clear();deferred.trim();coldRegions.clear();visibleReplay.clear();visibleReplay.trim();nearby.clear();nearby.trim();coldSince.clear();coldSince.trim();peakDeferred=0;captureNanos=0;}
+    public static void clear(){world=null;ready=false;current=new HotSoftGrid();working.clear();working.trim();peakWorking=0;deferred.clear();deferred.trim();awaitingMesh.clear();coldRegions.clear();visibleReplay.clear();visibleReplay.trim();nearby.clear();nearby.trim();coldSince.clear();coldSince.trim();peakDeferred=0;captureNanos=0;}
     public static int hotCount(){return ready?current.hotCount():0;}
     public static int logicalSoftCount(){return ready?current.softCount():0;}
     public static HotSoftGrid.State state(int x,int y,int z){return current.state(x,y,z);}

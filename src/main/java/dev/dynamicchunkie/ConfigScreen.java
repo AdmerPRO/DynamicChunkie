@@ -53,7 +53,7 @@ public final class ConfigScreen extends Screen {
     }
     private int particleStart() {return 14+(types().size()+4)/5;}
     private int toolsStart() {return particleStart()+(particleTypes().size()+2)/3;}
-    private int pageCount() {return toolsStart()+3;}
+    private int pageCount() {return toolsStart()+4;}
     @Override protected void init() {
         labels.clear();
         row = 0;
@@ -132,6 +132,10 @@ public final class ConfigScreen extends Screen {
                     toggle("shortenAmbientParticles",()->draft.shortenAmbientParticles,v->draft.shortenAmbientParticles=v);
                     toggle("filterHotSectionDraws",()->draft.filterHotSectionDraws,v->draft.filterHotSectionDraws=v);
                     toggle("deferColdSectionRebuilds",()->draft.deferColdSectionRebuilds,v->draft.deferColdSectionRebuilds=v);
+                } else if (page == toolsStart()+3) {
+                    integer("replayRequestsPerFrame",draft.replayRequestsPerFrame,v->draft.replayRequestsPerFrame=v);
+                    integer("replayPendingUploads",draft.replayPendingUploads,v->draft.replayPendingUploads=v);
+                    integer("entityTypeCpuBudgetMicros",draft.entityTypeCpuBudgetMicros,v->draft.entityTypeCpuBudgetMicros=v);
                 } else if(page<particleStart()) {
                     var types=types();int start=(page-14)*5;
                     for(int i=start;i<Math.min(types.size(),start+5);i++) {

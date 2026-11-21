@@ -29,6 +29,9 @@ public final class DynamicChunkieConfig {
     public java.util.Set<String> importantParticleTypes=new java.util.HashSet<>(java.util.List.of(
             "minecraft:damage_indicator","minecraft:crit","minecraft:totem_of_undying","minecraft:enchanted_hit"));
     public boolean enableAdaptiveEntityDistance = false, enableEntityTypeLimits = false;
+    public int replayRequestsPerFrame=32;
+    public int replayPendingUploads=16;
+    public int entityTypeCpuBudgetMicros=0;
     public int entityShadowDistance=0;
     public int entityNameDistance=0;
     public int mobDetailDistance=0;
@@ -82,6 +85,9 @@ public final class DynamicChunkieConfig {
         particleTypeBudgets.replaceAll((key,value)->clamp(value,0,10000));
         if(importantParticleTypes==null)importantParticleTypes=new java.util.HashSet<>();
         importantParticleTypes.remove(null);
+        replayRequestsPerFrame=clamp(replayRequestsPerFrame,1,256);
+        replayPendingUploads=clamp(replayPendingUploads,1,256);
+        entityTypeCpuBudgetMicros=clamp(entityTypeCpuBudgetMicros,0,20000);
         entityShadowDistance=clamp(entityShadowDistance,0,512);
         entityNameDistance=clamp(entityNameDistance,0,512);
         mobDetailDistance=clamp(mobDetailDistance,0,512);
@@ -145,6 +151,9 @@ public final class DynamicChunkieConfig {
         importantParticleTypes=new java.util.HashSet<>(other.importantParticleTypes);
         enableAdaptiveEntityDistance=other.enableAdaptiveEntityDistance;
         enableEntityTypeLimits=other.enableEntityTypeLimits;
+        replayRequestsPerFrame=other.replayRequestsPerFrame;
+        replayPendingUploads=other.replayPendingUploads;
+        entityTypeCpuBudgetMicros=other.entityTypeCpuBudgetMicros;
         entityShadowDistance=other.entityShadowDistance;
         entityNameDistance=other.entityNameDistance;
         mobDetailDistance=other.mobDetailDistance;

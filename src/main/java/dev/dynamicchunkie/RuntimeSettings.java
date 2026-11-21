@@ -28,6 +28,9 @@ public final class RuntimeSettings {
     public final int particleVisualDistance;
     public final boolean enableAdaptiveEntityDistance;
     public final boolean enableEntityTypeLimits;
+    public final int replayRequestsPerFrame;
+    public final int replayPendingUploads;
+    public final int entityTypeCpuBudgetMicros;
     public final int entityShadowDistance;
     public final int entityNameDistance;
     public final int mobDetailDistance;
@@ -110,6 +113,9 @@ public final class RuntimeSettings {
         particleVisualDistance=source.particleVisualDistance;
         enableAdaptiveEntityDistance=source.enableAdaptiveEntityDistance;
         enableEntityTypeLimits=source.enableEntityTypeLimits;
+        replayRequestsPerFrame=source.replayRequestsPerFrame;
+        replayPendingUploads=source.replayPendingUploads;
+        entityTypeCpuBudgetMicros=source.entityTypeCpuBudgetMicros;
         entityShadowDistance=source.entityShadowDistance;
         entityNameDistance=source.entityNameDistance;
         mobDetailDistance=source.mobDetailDistance;

@@ -33,6 +33,12 @@ public final class DynamicChunkie implements ClientModInitializer {
             if (player==net.minecraft.client.Minecraft.getInstance().player) manager.noteCombat();
             return net.minecraft.world.InteractionResult.PASS;
         });
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents.CHUNK_LOAD.register((level,chunk) ->
+                ((EnvironmentRevision)level).dynamicchunkie$changes().chunk(dev.dynamicchunkie.render.RenderChanges.Kind.CHUNK_LOAD,
+                        chunk.getPos().getMinBlockX() >> 4,chunk.getPos().getMinBlockZ() >> 4));
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents.CHUNK_UNLOAD.register((level,chunk) ->
+                ((EnvironmentRevision)level).dynamicchunkie$changes().chunk(dev.dynamicchunkie.render.RenderChanges.Kind.CHUNK_UNLOAD,
+                        chunk.getPos().getMinBlockX() >> 4,chunk.getPos().getMinBlockZ() >> 4));
         ClientTickEvents.END_CLIENT_TICK.register(manager::tick);
         ClientTickEvents.END_CLIENT_TICK.register(culling::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(manager::restore);

@@ -6,6 +6,13 @@ class PerformanceBudgetTest {
     private void fill(PerformanceBudget p,double frame,double cpu,double gpu) {
         for (int i=0;i<120;i++) p.record(frame,cpu,cpu,gpu);
     }
+    @Test void profilerSummarizesWithoutChangingDistancePolicy() {
+        var budget=new PerformanceBudget();
+        for(int i=0;i<30;i++)budget.record(25,20,10,Double.NaN);
+        budget.summarize(2_000_000_000L);
+        assertEquals(25,budget.meanMs());assertEquals(25,budget.p95Ms());
+        budget.reset();assertEquals(0,budget.meanMs());
+    }
     @Test void sustainedGpuPressureLowersCeilingWithoutChangingEnvironmentFloor() {
         var p=new PerformanceBudget();fill(p,35,8,98);
         p.adjust(24,16,2,32,60,1_000_000_000L,true,true);

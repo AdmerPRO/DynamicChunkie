@@ -2,6 +2,10 @@ package dev.dynamicchunkie.adaptive;
 
 public final class AnalysisPolicy {
     private AnalysisPolicy() {}
+    public static boolean approachingWall(boolean flight,double speed,double forward) {
+        // Zero is also the sentinel for unloaded terrain; never treat it as a proven wall.
+        return flight && speed>8 && forward>0 && forward<.4;
+    }
     public static int interval(double speed,boolean elytra,boolean lookingAround,boolean cpuPressure,
             int stationary,int walking,int flying,boolean adaptive,int fixed) {
         int base=adaptive?(elytra?flying:speed>.15||lookingAround?walking:stationary):fixed;

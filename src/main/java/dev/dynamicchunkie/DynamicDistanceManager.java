@@ -13,26 +13,31 @@ public final class DynamicDistanceManager {
     private final PerformanceBudget performance=new PerformanceBudget();
     private final EnvironmentCache cache=new EnvironmentCache();
     private static final ThreadMXBean THREADS=ManagementFactory.getThreadMXBean();
+    private final dev.dynamicchunkie.performance.FrameCpuSampler cpuSampler =
+            new dev.dynamicchunkie.performance.FrameCpuSampler(() ->
+                    THREADS.isCurrentThreadCpuTimeSupported() ? THREADS.getCurrentThreadCpuTime() : -1);
     private RenderDistanceController controller;
-    private boolean active,initialized,memoryPressure,wasSampling;
+    private DistanceOwnership ownership;
+    private boolean initialized,memoryPressure,wasSampling;
     private Object world;
-    private long lastAnalysis,lastFrame,lastCpu;
+    private long lastAnalysis,lastFrame;
     private double smoothed=Double.NaN,lastYaw,analysisMs;
-    private int lastApplied,target,intervalMs=750;
+    private int target,intervalMs=750;
     private EnvironmentScore score;
 
     public DynamicDistanceManager(DynamicChunkieConfig config) {this.config=config;}
     public void onFrame(Minecraft client) {
         long now=System.nanoTime();
-        long cpu=THREADS.isCurrentThreadCpuTimeSupported()?THREADS.getCurrentThreadCpuTime():-1;
         boolean sampling=config.enabled && client.level!=null && client.player!=null &&
                 client.gui.screen()==null && !client.isPaused();
+        if (!sampling || lastFrame==0) cpuSampler.reset();
+        double cpu=sampling ? cpuSampler.frame(now,250_000_000L) : Double.NaN;
         if (sampling && wasSampling && lastFrame!=0) {
             performance.record((now-lastFrame)/1e6,client.getFrameTimeNs()/1e6,
-                    cpu>=0 && lastCpu>=0?(cpu-lastCpu)/1e6:Double.NaN,client.getGpuUtilization());
+                    cpu,client.getGpuUtilization());
         } else if (wasSampling) performance.reset();
         wasSampling=sampling;
-        lastFrame=now;lastCpu=cpu;
+        lastFrame=now;
     }
     public void noteCombat() {transitions.combat(System.nanoTime());}
     public void tick(Minecraft client) {
@@ -41,28 +46,21 @@ public final class DynamicDistanceManager {
             config.minRenderDistance=Math.min(config.minRenderDistance,controller.supportedMaximum());
             config.maxRenderDistance=Math.min(config.maxRenderDistance,controller.supportedMaximum());
             config.validate();
-            if (config.restorePending && config.defaultRenderDistance>=2) {
-                controller.apply(config.defaultRenderDistance);
-                client.options.save();config.restorePending=false;
-            }
+            ownership=new DistanceOwnership(config,controller::current,controller::apply,client.options::save,config::save);
+            if (!ownership.recover()) return;
             if (config.defaultRenderDistance<2) config.defaultRenderDistance=controller.current();
             config.save();initialized=true;
         }
         if (!config.enabled || !RenderCache.canChangeDistance() || client.level==null || client.player==null) {
             restore(client);return;
         }
-        if (active && controller.current()!=lastApplied) {
-            config.defaultRenderDistance=controller.current();
-            config.save();lastApplied=controller.current();
-        }
+        if (!ownership.captureManualChange()) return;
         long now=System.nanoTime();
         if (client.player.hurtTime>0) transitions.combat(now);
         if (client.gui.screen()!=null || client.isPaused()) {transitions.pause(now);return;}
-        if (!active) {
-            config.defaultRenderDistance=controller.current();
-            config.restorePending=true;
-            if (!config.save()) return;
-            active=true;lastApplied=controller.current();transitions.pause(now);
+        if (!ownership.owned()) {
+            if (!ownership.acquire()) return;
+            transitions.pause(now);
         }
         if (world!=client.level) {
             world=client.level;resetAnalysis();performance.reset();lastFrame=0;
@@ -70,11 +68,11 @@ public final class DynamicDistanceManager {
         var player=client.player;
         if (transitions.observe(client.level,player.getX(),player.getY(),player.getZ(),player.getDeltaMovement().length(),
                 player.hurtTime>0,now,config.enableTeleportRecovery,config.teleportThresholdBlocks,config.combatGraceMs)) {
-            controller.apply(config.bound(2));lastApplied=controller.current();
+            ownership.set(config.bound(2));
             resetAnalysis();performance.reset();lastFrame=0;
         }
         double speed=player.getDeltaMovement().length()*20;
-        boolean turning=Math.abs(player.getYRot()-lastYaw)>15;
+        boolean turning=Math.abs(net.minecraft.util.Mth.wrapDegrees(player.getYRot()-lastYaw))>15;
         intervalMs=AnalysisPolicy.interval(speed,player.isFallFlying(),turning,
                 config.enableHardwareAdaptive && (performance.cpuPressure() || analysisMs>3),
                 config.stationaryIntervalMs,config.walkingIntervalMs,config.elytraIntervalMs,
@@ -83,8 +81,9 @@ public final class DynamicDistanceManager {
             long begin=System.nanoTime();
             var eye=player.getEyePosition();
             var key=new EnvironmentCache.Key((int)Math.floor(eye.x*4),(int)Math.floor(eye.y*4),
-                    (int)Math.floor(eye.z*4),(int)Math.floor(player.getYRot()/5),(int)Math.floor(player.getXRot()/5));
-            long revision=((EnvironmentRevision)client.level).dynamicchunkie$revision();
+                    (int)Math.floor(eye.z*4),(int)Math.floor(net.minecraft.util.Mth.wrapDegrees(player.getYRot())/5),(int)Math.floor(player.getXRot()/5));
+            int x=(int)Math.floor(eye.x)>>4,y=(int)Math.floor(eye.y)>>4,z=(int)Math.floor(eye.z)>>4;
+            long revision=((EnvironmentRevision)client.level).dynamicchunkie$changes().region(x-4,y-4,z-4,x+4,y+4,z+4,true);
             boolean reusable=config.enableAdaptiveAnalysis && speed<.15;
             EnvironmentScore cached=reusable?cache.get(key,now,revision,config.analysisCacheTtlMs):null;
             score=cached!=null?cached:analyzer.analyze(client,config);
@@ -108,19 +107,18 @@ public final class DynamicDistanceManager {
                     client.level.getSectionsCount(),config.cacheMemoryLimitMb));
         target=stableTarget.update(config.bound(candidate),now,config);
         int current=controller.current(),bounded=config.bound(current);
-        if (current!=bounded) {controller.apply(bounded);lastApplied=controller.current();return;}
+        if (current!=bounded) {ownership.set(bounded);return;}
+        if (target>current && (config.enableFpsAdaptive || config.enableHardwareAdaptive) && performance.growthBlocked(now)) return;
         if (Math.abs(target-current)<=config.deadZoneChunks) return;
         int next=transitions.next(current,target,now,config.transitionIntervalMs);
-        if (next!=current) {controller.apply(config.bound(next));lastApplied=controller.current();}
+        if (next!=current) {ownership.set(config.bound(next));}
     }
     private void resetAnalysis() {
-        score=null;cache.clear();stableTarget.reset();smoothed=Double.NaN;lastAnalysis=0;
+        analyzer.reset();score=null;cache.clear();stableTarget.reset();smoothed=Double.NaN;lastAnalysis=0;
     }
     public void restore(Minecraft client) {
-        if (!active) return;
-        controller.apply(config.defaultRenderDistance);
-        client.options.save();config.restorePending=false;config.save();
-        active=false;world=null;target=0;resetAnalysis();transitions.reset();performance.reset();lastFrame=0;
+        if (ownership==null || !ownership.owned() || !ownership.release()) return;
+        world=null;target=0;resetAnalysis();transitions.reset();performance.reset();lastFrame=0;
     }
     public void toggle(Minecraft client) {
         config.enabled=!config.enabled;if (!config.enabled) restore(client);config.save();

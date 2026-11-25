@@ -24,7 +24,7 @@ The first release of DynamicChunkie introduces the client-side dynamic Render Di
 ### Supported Minecraft versions
 
 26.3, 26.2, 26.1.2, 26.1.1, 26.1, and 1.21.1 through 1.21.11. Use the build for the exact Minecraft version.
-### Development additions on master — Minecraft 26.3 only
+### Adaptive visuals on all supported Minecraft versions
 
 - Conservative 16×16×16 Terrain Section Culling for vanilla and the supported Sodium build,
   with bounded work, block/chunk invalidation and command-cache restoration.
@@ -35,10 +35,10 @@ The first release of DynamicChunkie introduces the client-side dynamic Render Di
 - Directional room/passage/drop/summit classification, verified cave-exit prediction,
   and faster downward RD response when flying toward a known obstacle.
 
-Version remains 0.1.0. Other supported Minecraft branches have not received these additions.
+Version 0.1.0 includes these controls on 1.21.1–1.21.11, 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.
 
 - Experimental hot/soft section working set: 26-neighbour diagonal warm buffer,
   conservative camera filtering and bounded cold rebuild deferral. Native meshes
   stay cached; this feature does not evict geometry or promise RAM/VRAM savings.
-- Automated hot/soft OFF/ON benchmarks for vanilla and supported Sodium, with
+- Automated hot/soft OFF/ON benchmarks on 1.21.5–1.21.11 and 26.x for vanilla and supported Sodium, with
   frame-time JSON/CSV reports, repeat ordering and a Python comparison script.

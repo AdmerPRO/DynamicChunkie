@@ -70,9 +70,10 @@ All four builds use Java 25, unobfuscated official names and client-only depende
 Long-flight memory, shaders and visual behavior with arbitrary resource packs still
 require the manual checks documented in each README.
 
-## Additional visual features on master only
+## Adaptive rendering across supported versions
 
-Minecraft 26.3 now has the optional features documented in
-[visual controls](docs/visual-controls-26.3.md), with 61 unit tests and graphical
-vanilla/Sodium coverage. No other version branch has been changed for this work.
-The version remains 0.1.0.
+Each branch includes adaptive render distance, entity and particle controls, terrain
+filtering, hot/soft sections and the profiler. Renderer hooks follow the Minecraft
+and Sodium versions selected by the branch. Vanilla and Sodium have client world
+tests on 1.21.5–1.21.11 and 26.x. Versions 1.21.1–1.21.4 have startup smoke tests
+and an in-world benchmark command. Use their branch README for the measurement procedure.

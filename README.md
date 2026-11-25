@@ -315,15 +315,14 @@ Separate branches and artifacts are available for **26.2, 26.1.2, 26.1.1 and 26.
 (Java 25), alongside the existing 1.21.x ports. Use the JAR for your exact Minecraft
 version; dependency selections and validation are listed in [PORTS.md](PORTS.md).
 
-Development on master (26.3): [optional visual controls and current limitations](docs/visual-controls-26.3.md). These additions have not been ported to the other version branches.
+Each supported branch includes the adaptive visual controls. See the branch README for renderer and benchmark support.
 
-Master now includes optional Terrain Section Culling, adaptive entity distances and
+DynamicChunkie includes optional Terrain Section Culling, adaptive entity distances and
 per-type limits, particle budgets/priorities, cloud quality, predictive cave/summit
 analysis and a performance profiler. See [visual controls](docs/visual-controls-26.3.md)
-for configuration, renderer integration and conservative limits. These additions
-are **26.3 only** until the other version ports are explicitly updated.
+for configuration, renderer integration and conservative limits.
 
-## Hot / soft subregions (26.3 experimental)
+## Experimental hot / soft subregions
 
 Enable **Hot / soft sections** on the terrain page in Mod Menu, or set
 `enableHotSoftSections: true`. It is off by default. Each section is Minecraft's

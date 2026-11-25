@@ -57,19 +57,19 @@ The analysis cache and its memory accounting are bounded. The memory budget is a
 
 Environment samples cannot know every distant horizon or cave opening. Unloaded chunks count as blocked. Resource pack reloads and compiling newly visible chunks can still cause frame-time spikes. 
 
-## New visual controls — Minecraft 26.3 only
+## Visual controls on supported Minecraft versions
 
-The master build adds optional conservative Terrain Section Culling, separate entity
+Each build includes optional conservative Terrain Section Culling, separate entity
 and block-entity distances, nearest-first per-type population limits with categories,
 particle budgets and importance rules, adaptive cloud quality, improved cave/exit/summit
 analysis, and a profiler with frame history and actual extra terrain-skip counters.
-Enable the controls in Mod Menu. These additions are not in the other version ports.
+Enable the controls in Mod Menu.
 The terrain culler uses verified fully opaque sections and fails open on uncertain data;
 see the project documentation for its limits and supported renderer combinations.
 
 An additional experimental hot/soft section mode keeps visible 16×16×16 sections
 and a one-section neighbour buffer warm, including diagonal neighbours. It can
 defer safe offscreen rebuilds while retaining existing meshes. It is off by
-default and currently available only on 26.3/master. Automated OFF/ON benchmarks
+default. On 1.21.5–1.21.11 and 26.x, automated OFF/ON benchmarks
 record frame times and extra draw skips; neither a fixed FPS improvement nor
 RAM/VRAM savings is guaranteed. See [benchmark instructions](docs/hot-soft-benchmarks.md).
